@@ -1,0 +1,84 @@
+# Operations Research Exam Helper - File Input Guide
+
+## File Input Format
+
+You can now quickly input problems using a text file named `problem.txt`.
+
+### Format Rules:
+
+**Line 1**: Problem type
+- Write `max` or `maximize` for maximization problems
+- Write `min` or `minimize` for minimization problems
+
+**Line 2**: Objective function
+- Format: `z = c1*x1 + c2*x2 + ...` or simply `z = x1 + 2x2 + ...`
+- You can omit coefficients of 1 (write `x1` instead of `1x1`)
+- Use `+` for positive coefficients and `-` for negative coefficients
+
+**Line 3+**: Constraints
+- Format: `a1*x1 + a2*x2 + ... <= b` (or `>=` or `=`)
+- Use `<=` for less than or equal constraints
+- Use `>=` for greater than or equal constraints
+- Use `=` for equality constraints
+- Spaces are optional
+
+### Examples:
+
+**Example 1: problem.txt**
+```
+max
+z = 3x1 + 5x2
+x1 <= 4
+2x2 >= 12
+3x1 + 2x2 = 18
+```
+
+**Example 2: Simplex Problem**
+```
+max
+z = 4x1 + 3x2 + 6x3
+2x1 + x2 + x3 <= 8
+x1 + 2x2 + 3x3 <= 12
+3x1 + 2x2 + x3 <= 18
+```
+
+**Example 3: Minimization with Big M**
+```
+min
+z = 2x1 + 3x2
+x1 + x2 <= 10
+2x1 + x2 >= 8
+x1 + 2x2 >= 12
+```
+
+### Using File Input:
+
+1. Create a file named `problem.txt` in the same directory as the code
+2. Write your problem following the format above
+3. Run the program and select option 4: "Load from File (problem.txt)"
+4. The program will automatically:
+   - Detect the number of variables
+   - Detect the constraint types
+   - Choose between Simplex or Big M method
+   - Solve the problem step-by-step
+
+### Notes:
+
+- All variables must be in the form x1, x2, x3, etc.
+- The program automatically assumes all variables >= 0
+- You don't need to specify the number of variables or constraints
+- The program will detect them automatically
+- Coefficients can be integers or decimals
+- You can use spaces for readability (they will be ignored)
+
+### Supported Formats:
+
+✅ `x1 + 2x2 <= 5`
+✅ `3x1-x2>=10`
+✅ `x1 + x2 + x3 = 8`
+✅ `-2x1 + 3x2 <= 7`
+✅ `z = 4x1 + 3x2`
+
+❌ `x1 + x2 < 5` (use `<=` instead)
+❌ `2*x1 + 3*x2 <= 5` (omit the `*`)
+❌ `x + y <= 5` (must use x1, x2, etc.)
