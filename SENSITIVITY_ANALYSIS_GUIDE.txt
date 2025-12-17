@@ -1,0 +1,252 @@
+================================================================================
+SENSITIVITY ANALYSIS - USER GUIDE
+================================================================================
+
+OVERVIEW:
+The Sensitivity Analysis module analyzes how changes in problem parameters
+affect the optimal solution. Currently implemented: Changes in Objective 
+Function Coefficients.
+
+================================================================================
+MENU OPTION: 10. Sensitivity Analysis
+================================================================================
+
+WORKFLOW:
+1. Choose input method (Manual or File)
+2. Program solves the problem to optimality
+3. Choose sensitivity analysis case
+4. Perform analysis
+
+================================================================================
+CASE 1: CHANGE IN OBJECTIVE FUNCTION COEFFICIENTS
+================================================================================
+
+When you change a coefficient in the objective function (e.g., from 3x1 to 5x1):
+- The Z row changes
+- Zj values change
+- Zj-Cj values change
+- Optimal value changes
+
+THREE OPTIONS AVAILABLE:
+------------------------
+
+1. FIND RANGE FOR A COEFFICIENT
+   - Select which variable (x1, x2, etc.)
+   - Program calculates the range where solution stays optimal
+   - Example output: "2 <= C1 <= 4"
+   - Meaning: x1's coefficient can be between 2 and 4 without changing basis
+
+2. CHANGE A SPECIFIC COEFFICIENT VALUE
+   - Select which variable
+   - Enter new coefficient value
+   - Program recalculates Zj and Zj-Cj
+   - Checks if still optimal
+   
+   If STILL OPTIMAL:
+   ✓ Shows updated table
+   ✓ Shows old and new objective values
+   ✓ Solution basis remains the same
+   
+   If BECOMES NON-OPTIMAL:
+   ✗ Shows which Zj-Cj values are negative
+   ✗ Prompts to continue with Simplex Method
+   ✗ Finds new optimal solution from current basis
+
+3. FIND RANGES FOR ALL COEFFICIENTS
+   - Automatically analyzes all decision variables
+   - Shows range for each coefficient turn by turn
+   - Press Enter to see next coefficient
+   - Comprehensive view of all parameter sensitivities
+
+================================================================================
+MATHEMATICAL EXPLANATION
+================================================================================
+
+FOR BASIC VARIABLES:
+-------------------
+If variable xi is in the basis (currently positive in solution):
+
+The coefficient Ci appears in both:
+- Objective function: Z = C1x1 + C2x2 + ...
+- Cb vector (coefficients of basic variables)
+
+When Ci changes:
+- Zj = Σ(Cb[i] × table[i][j]) changes for all j
+- Zj-Cj changes for all non-basic variables
+
+For solution to remain optimal:
+- All Zj-Cj >= 0 must still hold
+
+For each non-basic variable:
+- Zj-Cj = (coefficient_of_C) × C + constant
+- Set Zj-Cj >= 0 and solve for C
+- This gives constraints on C
+
+Example:
+  If Zj-Cj = -1*C + 4
+  Then -1*C + 4 >= 0
+  So C <= 4
+
+Combining all constraints gives the range.
+
+
+FOR NON-BASIC VARIABLES:
+-----------------------
+If variable xi is NOT in basis (currently 0 in solution):
+
+The coefficient Ci only appears in objective function.
+
+Optimality condition:
+- Zj - Ci >= 0
+- Ci <= Zj (where Zj is calculated from basic variables)
+
+This gives a simple upper bound on Ci.
+
+Example:
+  If Zj = 5 for x3
+  Then C3 <= 5
+  (Any value up to 5 keeps solution optimal)
+
+================================================================================
+EXAM USAGE TIPS
+================================================================================
+
+1. FINDING RANGES:
+   ------------------
+   Step 1: Identify if variable is basic or non-basic
+   Step 2: For basic variables:
+           - Write Zj-Cj for each non-basic variable as function of C
+           - Set each expression >= 0
+           - Solve inequalities
+           - Take intersection of all constraints
+   Step 3: For non-basic variables:
+           - Calculate Zj from current basis
+           - Set C <= Zj
+
+2. CHANGING COEFFICIENTS:
+   -----------------------
+   Step 1: Update Cj array
+   Step 2: If variable is basic, update Cb
+   Step 3: Recalculate entire Zj row
+   Step 4: Recalculate entire Zj-Cj row
+   Step 5: Check optimality (all Zj-Cj >= 0?)
+   Step 6: If not optimal, continue with simplex iterations
+
+3. INTERPRETING RESULTS:
+   ----------------------
+   Range [L, U] means:
+   - Current basis stays optimal for any C in this range
+   - Below L: different basis becomes optimal
+   - Above U: different basis becomes optimal
+   - Within [L, U]: only objective value changes, not solution
+
+================================================================================
+DETAILED EXAMPLE
+================================================================================
+
+Original Problem:
+  max Z = 3x1 + 2x2
+  s.t. x1 + x2 <= 4
+       2x1 + x2 <= 5
+
+Optimal Solution:
+  x1 = 1, x2 = 3, Z = 9
+  Basic: {x1, x2}
+  
+Final Simplex Table:
+  Cb    B    x1   x2   s1   s2   RHS
+  2     x2   0    1    2    -1   3
+  3     x1   1    0    -1   1    1
+  -------------------------
+  Zj         3    2    1    1    9
+  Zj-Cj      0    0    1    1
+
+FINDING RANGE FOR C1 (coefficient of x1):
+-----------------------------------------
+x1 is BASIC (Cb[1] = 3)
+
+For s1 (non-basic):
+  Zj = Cb[0]×table[0][2] + Cb[1]×table[1][2]
+     = 2×2 + 3×(-1) = 4 - 3 = 1
+  But now Cb[1] = C1, so:
+  Zj = 2×2 + C1×(-1) = 4 - C1
+  Zj-Cj = 4 - C1 - 0 = 4 - C1
+  
+  For optimality: 4 - C1 >= 0
+  Therefore: C1 <= 4
+
+For s2 (non-basic):
+  Zj = 2×(-1) + C1×1 = -2 + C1
+  Zj-Cj = -2 + C1 - 0 = C1 - 2
+  
+  For optimality: C1 - 2 >= 0
+  Therefore: C1 >= 2
+
+RANGE: 2 <= C1 <= 4
+
+INTERPRETATION:
+- If C1 < 2: Solution changes (s2 enters basis)
+- If 2 <= C1 <= 4: Same solution (x1=1, x2=3)
+- If C1 > 4: Solution changes (s1 enters basis)
+
+CHANGING C1 TO 5:
+-----------------
+New Zj-Cj for s1: 4 - 5 = -1 < 0 ✗ (NOT OPTIMAL)
+
+This means s1 should enter the basis.
+Continue with simplex to find new optimal solution.
+
+================================================================================
+OUTPUT INTERPRETATION
+================================================================================
+
+When program shows:
+"x1 is a BASIC variable"
+→ Variable is in current solution (non-zero value)
+
+"x1 is a NON-BASIC variable"
+→ Variable is not in current solution (zero value)
+
+"For each non-basic variable, we calculate Zj-Cj as a function of C"
+→ Program is finding how Zj-Cj changes when coefficient changes
+
+"Constraint: C >= 2"
+→ Coefficient must be at least 2 for optimality
+
+"Constraint: C <= 4"
+→ Coefficient must be at most 4 for optimality
+
+"OPTIMAL RANGE FOR C1: 2 <= C1 <= 4"
+→ Final range combining all constraints
+
+"SOLUTION REMAINS OPTIMAL!"
+→ New coefficient is within range, basis unchanged
+
+"SOLUTION BECOMES NON-OPTIMAL!"
+→ New coefficient is outside range, need new solution
+
+================================================================================
+ADVANTAGES FOR EXAMS
+================================================================================
+
+✓ Automatically solves problem to optimality first
+✓ Clear step-by-step range calculations
+✓ Shows all mathematical expressions
+✓ Identifies basic vs non-basic variables
+✓ Displays all constraints on coefficient
+✓ Calculates and displays final range
+✓ Tests specific coefficient changes
+✓ Detects when solution becomes non-optimal
+✓ Can continue with simplex automatically
+✓ Comprehensive analysis of all coefficients
+
+================================================================================
+FUTURE ENHANCEMENTS (Not Yet Implemented)
+================================================================================
+
+Case 2: Change in RHS (Right-Hand Side) values
+Case 3: Adding a new constraint
+Case 4: Adding a new variable
+Case 5: Change in constraint coefficients
+
+================================================================================

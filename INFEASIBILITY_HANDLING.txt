@@ -1,0 +1,131 @@
+================================================================================
+SIMPLEX METHOD - AUTOMATIC INFEASIBILITY HANDLING
+================================================================================
+
+FEATURE SUMMARY:
+The simplex method now automatically detects infeasibility conditions and 
+switches to the appropriate solving method.
+
+================================================================================
+TWO INFEASIBILITY CONDITIONS HANDLED:
+================================================================================
+
+CONDITION 1: OPTIMAL BUT INFEASIBLE
+-----------------------------------
+Detection:
+- All Zj-Cj values >= 0 (optimal)
+- BUT some RHS values < 0 (infeasible)
+
+Action:
+- Display: "CONDITION DETECTED: OPTIMAL BUT INFEASIBLE"
+- Explain: Solution is optimal but has negative RHS values
+- Wait: Press Enter to continue
+- Switch: Automatically apply DUAL SIMPLEX METHOD
+
+Why Dual Simplex?
+- Dual Simplex maintains optimality while restoring feasibility
+- Starts with optimal but infeasible solution
+- Iteratively makes solution feasible without losing optimality
+
+
+CONDITION 2: NOT OPTIMAL AND INFEASIBLE
+---------------------------------------
+Detection:
+- Some Zj-Cj values < 0 (not optimal)
+- AND some RHS values < 0 (infeasible)
+
+Action:
+- Display: "CONDITION DETECTED: NOT OPTIMAL AND INFEASIBLE"
+- Explain: Solution is neither optimal nor feasible
+- Wait: Press Enter to continue
+- Switch: Automatically apply BIG M METHOD
+
+Why Big M?
+- Big M can handle infeasible starting solutions
+- Uses artificial variables to create initial feasible solution
+- Then optimizes to find true optimal solution
+
+
+NORMAL OPERATION (NO CHANGES):
+------------------------------
+If RHS values are all >= 0 (feasible):
+- Simplex method continues normally
+- No automatic switching
+- Works exactly as before
+
+================================================================================
+USER EXPERIENCE:
+================================================================================
+
+When infeasibility is detected:
+
+1. Current table is displayed showing the problem
+2. Clear message box appears:
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   CONDITION DETECTED: [description]
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+3. Explanation of what was detected:
+   - Current optimality status
+   - Current feasibility status
+   - Why the switch is needed
+   
+4. Prompt: ">>> Press Enter to switch to [METHOD]..."
+
+5. Automatic continuation with appropriate method
+
+================================================================================
+TECHNICAL IMPLEMENTATION:
+================================================================================
+
+New Function Added:
+- check_rhs_feasibility(table): Returns False if any RHS < 0
+
+Modified Function:
+- solve_simplex(): Now checks feasibility at two points:
+  1. When optimal: Check if feasible, switch to Dual Simplex if not
+  2. Each iteration: Check if infeasible, switch to Big M if not optimal
+
+Flow Logic:
+┌─────────────────┐
+│  Start Simplex  │
+└────────┬────────┘
+         │
+         v
+┌────────────────────┐     Yes    ┌──────────────────┐
+│  Is Optimal?       ├────────────>│ Check RHS >= 0?  │
+└────────┬───────────┘            └────────┬─────────┘
+         │ No                              │
+         │                          Yes ───┤──── No
+         │                                 │      │
+         v                                 │      v
+┌────────────────────┐             ┌──────v──────────────────┐
+│  Check RHS >= 0?   │             │ OPTIMAL BUT INFEASIBLE  │
+└────────┬───────────┘             │ Switch to Dual Simplex  │
+         │                         └─────────────────────────┘
+  Yes ───┤──── No
+         │      │
+         v      v
+┌────────────────────┐     ┌──────────────────────────┐
+│ Continue Normal    │     │ NOT OPTIMAL & INFEASIBLE │
+│ Simplex Iteration  │     │ Switch to Big M Method   │
+└────────────────────┘     └──────────────────────────┘
+
+================================================================================
+EXAM USAGE:
+================================================================================
+
+Benefits for Exams:
+✓ Automatically handles tricky infeasibility cases
+✓ Shows clear reasoning for method switches
+✓ Maintains full solution steps for both methods
+✓ Helps understand when to use each method
+✓ Provides learning opportunity through condition explanations
+
+Step Documentation:
+- All iterations before detection are shown
+- Detection message clearly marks transition point
+- New method starts fresh with complete steps
+- Final solution shows combined approach
+
+================================================================================

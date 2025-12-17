@@ -279,8 +279,16 @@ def read_problem_from_file(filename='problem.txt'):
     Line 3+: constraints like x1 + 3x2 <= 5
     """
     try:
-        with open(filename, 'r') as f:
-            lines = [line.strip() for line in f.readlines() if line.strip()]
+        # Try reading with UTF-8 BOM handling
+        with open(filename, 'r', encoding='utf-8-sig') as f:
+            raw_lines = f.readlines()
+        
+        # Remove BOM from first line if present
+        if raw_lines:
+            raw_lines[0] = raw_lines[0].lstrip('\ufeff').lstrip('\ufffe')
+        
+        # Now strip and filter empty lines
+        lines = [line.strip() for line in raw_lines if line.strip()]
         
         if len(lines) < 3:
             print("Error: File must have at least 3 lines (objective type, objective function, and at least one constraint)")
@@ -704,6 +712,13 @@ def check_infeasible(basic_vars, table, artificial_vars):
             return True
     return False
 
+def check_rhs_feasibility(table):
+    """Check if any RHS values are negative (indicating infeasibility)"""
+    for i in range(len(table)):
+        if table[i][-1] < -1e-9:  # Negative RHS
+            return False
+    return True
+
 def extract_solution(table, basic_vars, var_names, is_max):
     """Extract the final solution"""
     solution = {}
@@ -738,6 +753,80 @@ def print_solution(solution, var_names, zj, is_max, num_original_vars):
         if var.startswith('s') or var.startswith('S'):
             print(f"  {var} = {print_fraction(solution.get(var, 0))}")
 
+def continue_simplex_from_table(table, basic_vars, var_names, cj, cb, problem, start_iteration=0):
+    """Continue simplex iterations from a given table state"""
+    iteration = start_iteration
+    optimal_value = None
+    
+    while True:
+        # Calculate Zj and Zj-Cj to check optimality and find entering variable
+        num_vars = len(var_names)
+        zj = calculate_zj(table, cb, num_vars)
+        zj_cj = calculate_zj_cj(zj, cj, None)
+        
+        # Check optimality
+        if check_optimality(zj_cj):
+            # Print final table without ratios
+            print(f"\n{'='*80}")
+            print(f"ITERATION {iteration}")
+            print('='*80)
+            zj_final, zj_cj_final = print_simplex_table(table, basic_vars, var_names, cj, cb, iteration)
+            
+            # Check if solution is feasible
+            if not check_rhs_feasibility(table):
+                print("\n" + "!"*80)
+                print("OPTIMAL BUT INFEASIBLE - Switching to Dual Simplex")
+                print("!"*80)
+                input("\n>>> Press Enter to continue...")
+                return None, table, basic_vars, var_names, cj, cb
+            
+            solution = extract_solution(table, basic_vars, var_names, problem['is_max'])
+            print_solution(solution, var_names, zj_final, problem['is_max'], problem['num_vars'])
+            
+            # Calculate optimal value
+            optimal_value = zj_final[-1]
+            if not problem['is_max']:
+                optimal_value = -optimal_value
+            break
+        
+        # Find pivot column
+        pivot_col, min_zj_cj = find_pivot_column(zj_cj, var_names)
+        
+        if pivot_col == -1:
+            print("\nOptimal solution reached!")
+            break
+        
+        # Print table WITH ratios for the entering variable
+        zj, zj_cj = print_simplex_table(table, basic_vars, var_names, cj, cb, iteration, pivot_col=pivot_col)
+        
+        print(f"\nEntering Variable: {var_names[pivot_col]} (most negative Zj-Cj = {print_fraction(min_zj_cj)})")
+        
+        # Check unboundedness
+        if check_unbounded(table, pivot_col):
+            print("\n" + "!"*80)
+            print("UNBOUNDED SOLUTION!")
+            print("!"*80)
+            break
+        
+        # Find pivot row
+        pivot_row, min_ratio, ratios = find_pivot_row(table, pivot_col, basic_vars)
+        
+        if pivot_row == -1:
+            print("\nNo valid pivot row found. Problem may be unbounded.")
+            break
+        
+        print(f"\nLeaving Variable: {basic_vars[pivot_row]} (minimum ratio = {print_fraction(min_ratio)})")
+        
+        # Wait for user to continue
+        input("\n>>> Press Enter to perform pivot operation and see next iteration...")
+        
+        # Perform pivot operation
+        table, basic_vars, cb = perform_pivot_operation(table, pivot_row, pivot_col, basic_vars, var_names, cb, cj)
+        
+        iteration += 1
+    
+    return optimal_value, table, basic_vars, var_names, cj, cb
+
 def solve_simplex(problem, var_prefix='x'):
     """Main function to solve using Simplex Method"""
     print("\n" + "#"*80)
@@ -764,6 +853,22 @@ def solve_simplex(problem, var_prefix='x'):
             print(f"ITERATION {iteration}")
             print('='*80)
             zj_final, zj_cj_final = print_simplex_table(table, basic_vars, var_names, cj, cb, iteration)
+            
+            # Check if solution is feasible (no negative RHS)
+            if not check_rhs_feasibility(table):
+                print("\n" + "!"*80)
+                print("CONDITION DETECTED: OPTIMAL BUT INFEASIBLE")
+                print("!"*80)
+                print("The current solution is optimal (all Zj-Cj >= 0)")
+                print("BUT there are negative RHS values (infeasible solution).")
+                print("\nThis requires DUAL SIMPLEX METHOD to restore feasibility.")
+                print("!"*80)
+                
+                input("\n>>> Press Enter to switch to Dual Simplex Method...")
+                
+                # Switch to Dual Simplex
+                return solve_dual_simplex(problem, var_prefix)
+            
             solution = extract_solution(table, basic_vars, var_names, problem['is_max'])
             print_solution(solution, var_names, zj_final, problem['is_max'], problem['num_vars'])
             
@@ -772,6 +877,27 @@ def solve_simplex(problem, var_prefix='x'):
             if not problem['is_max']:
                 optimal_value = -optimal_value
             break
+        
+        # Not optimal - check if also infeasible
+        if not check_rhs_feasibility(table):
+            # Print current table
+            print(f"\n{'='*80}")
+            print(f"ITERATION {iteration}")
+            print('='*80)
+            zj_temp, zj_cj_temp = print_simplex_table(table, basic_vars, var_names, cj, cb, iteration)
+            
+            print("\n" + "!"*80)
+            print("CONDITION DETECTED: NOT OPTIMAL AND INFEASIBLE")
+            print("!"*80)
+            print("The current solution is NOT optimal (some Zj-Cj < 0)")
+            print("AND there are negative RHS values (infeasible solution).")
+            print("\nThis requires BIG M METHOD to find a feasible solution.")
+            print("!"*80)
+            
+            input("\n>>> Press Enter to switch to Big M Method...")
+            
+            # Switch to Big M
+            return solve_big_m(problem, var_prefix)
         
         # Find pivot column
         pivot_col, min_zj_cj = find_pivot_column(zj_cj, var_names)
@@ -3102,6 +3228,379 @@ def solve_transportation_problem():
                 print(f"  Ship {final_allocation[i][j]} units from S{i+1} to D{j+1} at cost {cost_matrix[i][j]} per unit = {cost}")
 
 
+# ============================================================================
+# SENSITIVITY ANALYSIS
+# ============================================================================
+
+def find_objective_coefficient_range(table, basic_vars, var_names, cj, cb, var_index, is_max):
+    """Find the range for an objective function coefficient where solution remains optimal"""
+    print(f"\n{'='*80}")
+    print(f"FINDING RANGE FOR COEFFICIENT OF {var_names[var_index]}")
+    print('='*80)
+    
+    # Check if variable is in basis
+    is_basic = var_names[var_index] in basic_vars
+    
+    if is_basic:
+        # Variable is basic
+        print(f"\n{var_names[var_index]} is a BASIC variable")
+        print("\nFor basic variables, we analyze the Zj-Cj row.")
+        print("The current solution remains optimal as long as all Zj-Cj >= 0")
+        
+        # Find which row this variable is in
+        basic_row = basic_vars.index(var_names[var_index])
+        
+        # Current coefficient
+        current_c = cj[var_index]
+        print(f"\nCurrent coefficient: C{var_index+1} = {current_c}")
+        
+        # Calculate Zj for all non-basic variables as function of C_k
+        print(f"\nLet C{var_index+1} = C (variable coefficient)")
+        print(f"\nFor each non-basic variable, we calculate Zj-Cj as a function of C:")
+        
+        lower_bound = float('-inf')
+        upper_bound = float('inf')
+        
+        for j in range(len(var_names)):
+            if var_names[j] not in basic_vars:
+                # Non-basic variable
+                # Zj = sum(Cb[i] * table[i][j])
+                # One of the Cb values is C (our variable)
+                
+                # Calculate Zj coefficient for C
+                coeff_of_c = table[basic_row][j]
+                
+                # Calculate constant part (other basic variables)
+                constant = 0
+                for i, bv in enumerate(basic_vars):
+                    if i != basic_row:
+                        constant += cb[i] * table[i][j]
+                
+                zj_minus_cj_expr = f"{coeff_of_c:.4g}C + {constant:.4g} - {cj[j]:.4g}"
+                final_constant = constant - cj[j]
+                
+                print(f"\n  {var_names[j]}: Zj-Cj = {coeff_of_c:.4g}*C + ({final_constant:.4g})")
+                
+                # For optimality: coeff_of_c * C + final_constant >= 0
+                # coeff_of_c * C >= -final_constant
+                
+                if abs(coeff_of_c) > 1e-9:
+                    if coeff_of_c > 0:
+                        # C >= -final_constant / coeff_of_c
+                        bound = -final_constant / coeff_of_c
+                        print(f"      Constraint: C >= {bound:.4g}")
+                        lower_bound = max(lower_bound, bound)
+                    else:
+                        # C <= -final_constant / coeff_of_c
+                        bound = -final_constant / coeff_of_c
+                        print(f"      Constraint: C <= {bound:.4g}")
+                        upper_bound = min(upper_bound, bound)
+                else:
+                    # Coefficient is 0, check if constant is non-negative
+                    if final_constant < -1e-9:
+                        print(f"      INFEASIBLE: {final_constant:.4g} < 0 (independent of C)")
+                        return None, None
+                    else:
+                        print(f"      Always satisfied: {final_constant:.4g} >= 0")
+        
+        print(f"\n{'='*80}")
+        print(f"OPTIMAL RANGE FOR C{var_index+1}:")
+        if lower_bound == float('-inf') and upper_bound == float('inf'):
+            print(f"  All real numbers (no restrictions)")
+        elif lower_bound == float('-inf'):
+            print(f"  C{var_index+1} <= {upper_bound:.4g}")
+        elif upper_bound == float('inf'):
+            print(f"  C{var_index+1} >= {lower_bound:.4g}")
+        else:
+            print(f"  {lower_bound:.4g} <= C{var_index+1} <= {upper_bound:.4g}")
+        print('='*80)
+        
+        return lower_bound, upper_bound
+        
+    else:
+        # Variable is non-basic
+        print(f"\n{var_names[var_index]} is a NON-BASIC variable (currently 0)")
+        print("\nFor non-basic variables, we check its Zj-Cj value.")
+        print("The solution remains optimal as long as Zj-Cj >= 0")
+        
+        # Calculate Zj
+        zj = 0
+        for i, bv in enumerate(basic_vars):
+            zj += cb[i] * table[i][var_index]
+        
+        current_c = cj[var_index]
+        print(f"\nCurrent coefficient: C{var_index+1} = {current_c}")
+        print(f"Zj (contribution from basic variables) = {zj:.4g}")
+        print(f"Current Zj-Cj = {zj:.4g} - {current_c:.4g} = {zj - current_c:.4g}")
+        
+        # For optimality: Zj - C >= 0
+        # C <= Zj
+        print(f"\nFor optimality: Zj - C{var_index+1} >= 0")
+        print(f"                C{var_index+1} <= {zj:.4g}")
+        
+        lower_bound = float('-inf')
+        upper_bound = zj
+        
+        print(f"\n{'='*80}")
+        print(f"OPTIMAL RANGE FOR C{var_index+1}:")
+        print(f"  C{var_index+1} <= {upper_bound:.4g}")
+        print(f"  (Any value up to {upper_bound:.4g})")
+        print('='*80)
+        
+        return lower_bound, upper_bound
+
+def apply_objective_coefficient_change(problem, table, basic_vars, var_names, cj, cb, var_index, new_value):
+    """Apply a change to an objective function coefficient and check optimality"""
+    print(f"\n{'='*80}")
+    print(f"APPLYING COEFFICIENT CHANGE")
+    print('='*80)
+    
+    old_value = cj[var_index]
+    print(f"\nChanging coefficient of {var_names[var_index]}:")
+    print(f"  Old value: {old_value}")
+    print(f"  New value: {new_value}")
+    print(f"  Change: {new_value - old_value:+.4g}")
+    
+    # Update cj
+    new_cj = cj.copy()
+    new_cj[var_index] = new_value
+    
+    # Update cb if variable is basic
+    new_cb = cb.copy()
+    if var_names[var_index] in basic_vars:
+        basic_row = basic_vars.index(var_names[var_index])
+        new_cb[basic_row] = new_value
+        print(f"\n{var_names[var_index]} is basic, updating Cb[{basic_row}] = {new_value}")
+    
+    # Recalculate Zj and Zj-Cj
+    print(f"\nRecalculating Zj and Zj-Cj rows...")
+    
+    num_vars = len(var_names)
+    new_zj = calculate_zj(table, new_cb, num_vars)
+    new_zj_cj = calculate_zj_cj(new_zj, new_cj, None)
+    
+    # Print updated table
+    print(f"\n{'='*80}")
+    print("UPDATED SIMPLEX TABLE")
+    print('='*80)
+    print_simplex_table(table, basic_vars, var_names, new_cj, new_cb, iteration=0)
+    
+    # Check optimality
+    still_optimal = check_optimality(new_zj_cj)
+    
+    print(f"\n{'='*80}")
+    if still_optimal:
+        print("SOLUTION REMAINS OPTIMAL!")
+        print('='*80)
+        print("\nAll Zj-Cj values are >= 0")
+        print("The current basis is still optimal with the new coefficient.")
+        
+        # Calculate new optimal value
+        new_z_value = new_zj[-1]
+        old_z_value = 0
+        for i, bv in enumerate(basic_vars):
+            old_z_value += cb[i] * table[i][-1]
+        
+        print(f"\nObjective function value:")
+        print(f"  Old Z = {old_z_value:.4g}")
+        print(f"  New Z = {new_z_value:.4g}")
+        print(f"  Change = {new_z_value - old_z_value:+.4g}")
+        
+        return True, new_cj, new_cb
+    else:
+        print("SOLUTION BECOMES NON-OPTIMAL!")
+        print('='*80)
+        print("\nOne or more Zj-Cj values are negative:")
+        for j in range(len(var_names)):
+            if new_zj_cj[j] < -1e-9:
+                print(f"  {var_names[j]}: Zj-Cj = {new_zj_cj[j]:.4g} < 0")
+        
+        print("\nThe current basis is no longer optimal.")
+        print("Need to continue with Simplex Method to find new optimal solution.")
+        
+        input("\n>>> Press Enter to continue with Simplex Method...")
+        
+        # Continue with simplex from current table
+        return False, new_cj, new_cb
+
+def sensitivity_analysis_menu(problem, table, basic_vars, var_names, cj, cb, is_optimal):
+    """Main menu for sensitivity analysis"""
+    print("\n" + "="*80)
+    print("   SENSITIVITY ANALYSIS")
+    print("="*80)
+    
+    if not is_optimal:
+        print("\n[!] WARNING: Current solution is not optimal.")
+        print("    Sensitivity analysis requires an optimal solution.")
+        print("    Solving problem first...")
+        input("\nPress Enter to solve...")
+        
+        # Solve the problem first
+        optimal_value = solve_simplex(problem)
+        if optimal_value is None:
+            print("\nCould not find optimal solution. Cannot perform sensitivity analysis.")
+            return
+        
+        # Need to get the optimal table - this would require modifying solve_simplex to return it
+        print("\n[!] Please run sensitivity analysis from menu option 11 after solving.")
+        return
+    
+    print("\nCurrent solution is OPTIMAL. Ready for sensitivity analysis.")
+    print("\n" + "-"*80)
+    print("SENSITIVITY ANALYSIS CASES")
+    print("-"*80)
+    print("1. Change in Objective Function Coefficients")
+    print("2. Back to Main Menu")
+    print("-"*80)
+    
+    case_choice = get_int_input("\nEnter choice (1-2): ")
+    
+    if case_choice == 1:
+        # Case 1: Change in objective function coefficients
+        print("\n" + "="*80)
+        print("CASE 1: CHANGE IN OBJECTIVE FUNCTION COEFFICIENTS")
+        print("="*80)
+        
+        print("\nOptions:")
+        print("1. Find range for a coefficient (where solution remains optimal)")
+        print("2. Change a specific coefficient value")
+        print("3. Find ranges for all coefficients")
+        
+        option = get_int_input("\nEnter choice (1-3): ")
+        
+        if option == 1:
+            # Find range for one coefficient
+            print(f"\nAvailable variables: {', '.join([f'{i+1}. {var_names[i]}' for i in range(problem['num_vars'])])}")
+            var_choice = get_int_input(f"\nWhich variable coefficient (1-{problem['num_vars']}): ")
+            
+            if 1 <= var_choice <= problem['num_vars']:
+                find_objective_coefficient_range(table, basic_vars, var_names, cj, cb, var_choice - 1, problem['is_max'])
+            else:
+                print("Invalid variable choice.")
+                
+        elif option == 2:
+            # Change specific coefficient
+            print(f"\nAvailable variables: {', '.join([f'{i+1}. {var_names[i]}' for i in range(problem['num_vars'])])}")
+            var_choice = get_int_input(f"\nWhich variable coefficient (1-{problem['num_vars']}): ")
+            
+            if 1 <= var_choice <= problem['num_vars']:
+                print(f"\nCurrent coefficient of {var_names[var_choice-1]}: {cj[var_choice-1]}")
+                new_value = float(input(f"Enter new coefficient value: "))
+                
+                still_optimal, new_cj, new_cb = apply_objective_coefficient_change(
+                    problem, table, basic_vars, var_names, cj, cb, var_choice - 1, new_value)
+                
+                if not still_optimal:
+                    # Need to continue with simplex from current table
+                    print("\n[!] Continuing from current basis with Simplex Method...")
+                    
+                    # Continue simplex iterations from the modified table
+                    optimal_value, new_table, new_basic_vars, new_var_names, final_cj, final_cb = continue_simplex_from_table(
+                        table, basic_vars, var_names, new_cj, new_cb, problem, start_iteration=0)
+                    
+                    if optimal_value is not None:
+                        # Update current state with new optimal solution
+                        table = new_table
+                        basic_vars = new_basic_vars
+                        var_names = new_var_names
+                        cj = final_cj
+                        cb = final_cb
+                        print(f"\nNew optimal solution found with Z = {optimal_value}")
+                    else:
+                        print("\nCould not find new optimal solution.")
+                else:
+                    # Update coefficients for future analysis
+                    cj = new_cj
+                    cb = new_cb
+                    
+            else:
+                print("Invalid variable choice.")
+                
+        elif option == 3:
+            # Find ranges for all coefficients
+            print("\n" + "="*80)
+            print("FINDING RANGES FOR ALL OBJECTIVE FUNCTION COEFFICIENTS")
+            print("="*80)
+            
+            for i in range(problem['num_vars']):
+                input(f"\nPress Enter to find range for {var_names[i]}...")
+                find_objective_coefficient_range(table, basic_vars, var_names, cj, cb, i, problem['is_max'])
+
+def solve_and_prepare_sensitivity(problem, var_prefix='x'):
+    """Solve problem and prepare for sensitivity analysis"""
+    print("\n" + "#"*80)
+    print("SOLVING PROBLEM FOR SENSITIVITY ANALYSIS")
+    print("#"*80)
+    
+    # Setup initial table
+    table, basic_vars, var_names, cj, cb = setup_simplex_table(problem, var_prefix)
+    
+    iteration = 0
+    
+    while True:
+        # Calculate Zj and Zj-Cj
+        num_vars = len(var_names)
+        zj = calculate_zj(table, cb, num_vars)
+        zj_cj = calculate_zj_cj(zj, cj, None)
+        
+        # Check optimality
+        if check_optimality(zj_cj):
+            # Print final table
+            print(f"\n{'='*80}")
+            print(f"ITERATION {iteration}")
+            print('='*80)
+            zj_final, zj_cj_final = print_simplex_table(table, basic_vars, var_names, cj, cb, iteration)
+            
+            # Check feasibility
+            if not check_rhs_feasibility(table):
+                print("\n[!] Solution is infeasible. Cannot perform sensitivity analysis.")
+                return None, None, None, None, None, False
+            
+            solution = extract_solution(table, basic_vars, var_names, problem['is_max'])
+            print_solution(solution, var_names, zj_final, problem['is_max'], problem['num_vars'])
+            
+            print("\n" + "="*80)
+            print("OPTIMAL SOLUTION FOUND!")
+            print("Ready for sensitivity analysis.")
+            print("="*80)
+            
+            return table, basic_vars, var_names, cj, cb, True
+        
+        # Find pivot column
+        pivot_col, min_zj_cj = find_pivot_column(zj_cj, var_names)
+        
+        if pivot_col == -1:
+            break
+        
+        # Print table with ratios
+        zj, zj_cj = print_simplex_table(table, basic_vars, var_names, cj, cb, iteration, pivot_col=pivot_col)
+        
+        print(f"\nEntering Variable: {var_names[pivot_col]} (most negative Zj-Cj = {print_fraction(min_zj_cj)})")
+        
+        # Check unboundedness
+        if check_unbounded(table, pivot_col):
+            print("\n[!] Problem is unbounded. Cannot perform sensitivity analysis.")
+            return None, None, None, None, None, False
+        
+        # Find pivot row
+        pivot_row, min_ratio, ratios = find_pivot_row(table, pivot_col, basic_vars)
+        
+        if pivot_row == -1:
+            print("\n[!] No valid pivot row. Cannot continue.")
+            return None, None, None, None, None, False
+        
+        print(f"\nLeaving Variable: {basic_vars[pivot_row]} (minimum ratio = {print_fraction(min_ratio)})")
+        
+        input("\n>>> Press Enter to perform pivot operation...")
+        
+        # Perform pivot
+        table, basic_vars, cb = perform_pivot_operation(table, pivot_row, pivot_col, basic_vars, var_names, cb, cj)
+        
+        iteration += 1
+    
+    return None, None, None, None, None, False
+
+
 def main():
     """Main function with menu"""
     print("\n" + "="*80)
@@ -3122,17 +3621,55 @@ def main():
         print("7. Simplex with Matrix Method")
         print("8. Assignment Problem (Hungarian Method)")
         print("9. Transportation Problem (MODI Method)")
-        print("10. Exit")
+        print("10. Sensitivity Analysis")
+        print("11. Exit")
         print("-"*40)
         
-        choice = get_int_input("Enter your choice (1-10): ")
+        choice = get_int_input("Enter your choice (1-11): ")
         
-        if choice == 10:
+        if choice == 11:
             print("\nThank you for using OR Exam Helper. Good luck!")
             break
         
-        if choice not in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+        if choice not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
             print("Invalid choice. Please try again.")
+            continue
+        
+        # Handle Sensitivity Analysis
+        if choice == 10:
+            print("\n" + "="*80)
+            print("SENSITIVITY ANALYSIS")
+            print("="*80)
+            print("\nThis requires solving an LP problem first.")
+            print("1. Manual Input")
+            print("2. Load from File (problem.txt)")
+            
+            sa_choice = get_int_input("\nEnter choice (1-2): ")
+            
+            if sa_choice == 1:
+                problem = input_problem()
+            elif sa_choice == 2:
+                print("\nLoading problem from 'problem.txt'...")
+                problem = read_problem_from_file('problem.txt')
+                if problem is None:
+                    print("Failed to load problem from file.")
+                    continue
+                print("Problem loaded successfully!")
+            else:
+                print("Invalid choice.")
+                continue
+            
+            # Solve and get optimal table
+            table, basic_vars, var_names, cj, cb, is_optimal = solve_and_prepare_sensitivity(problem)
+            
+            if is_optimal:
+                # Perform sensitivity analysis
+                sensitivity_analysis_menu(problem, table, basic_vars, var_names, cj, cb, is_optimal)
+            
+            another = input("\n\nDo you want to solve another problem? (y/n): ").lower()
+            if another != 'y':
+                print("\nThank you for using OR Exam Helper. Good luck!")
+                break
             continue
         
         # Handle Transportation Problem
