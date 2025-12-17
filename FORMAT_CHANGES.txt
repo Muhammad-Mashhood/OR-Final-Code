@@ -1,0 +1,105 @@
+====================================================================
+IMPROVEMENTS SUMMARY - File Format Simplification
+====================================================================
+
+DATE: December 18, 2025
+
+CHANGES IMPLEMENTED:
+====================================================================
+
+1. TRANSPORTATION PROBLEM - Simplified Input Format
+   ------------------------------------------------
+   
+   OLD FORMAT (REMOVED):
+   - Required "transportation" keyword on first line
+   - Required explicit dimensions "m n" on second line
+   - Separate lines for supply and demand
+   
+   NEW FORMAT (AUTO-DETECT):
+   - No keywords needed
+   - Auto-detects dimensions from matrix structure
+   - Format: Each row = [costs...] supply
+             Last row = [demands...]
+   
+   EXAMPLE:
+   19 30 50 10 7
+   70 30 40 60 9
+   40 8 70 20 32
+   7 9 18 14
+   
+   This is automatically recognized as:
+   - 3 sources (3 rows with supply at end)
+   - 4 destinations (4 demand values)
+   - Balanced: Total Supply (48) = Total Demand (48)
+
+2. HUNGARIAN METHOD - Space-Separated Values
+   ------------------------------------------
+   
+   OLD FORMAT (REMOVED):
+   - Comma-separated values: 9,11,14,11,7
+   
+   NEW FORMAT (SIMPLIFIED):
+   - Space-separated values: 9 11 14 11 7
+   - Easier to type in exams
+   - More readable
+   
+   EXAMPLE:
+   min
+   9 11 14 11 7
+   6 15 13 13 10
+   12 13 6 8 8
+   11 9 10 12 9
+   10 12 9 11 13
+
+====================================================================
+
+CODE CHANGES:
+====================================================================
+
+1. Updated parse_transportation_problem():
+   - Removed requirement for "transportation" keyword
+   - Auto-detects M (sources) and N (destinations)
+   - Parses format: rows contain costs + supply, last row is demands
+   
+2. Updated parse_hungarian_problem():
+   - Changed from split(',') to split()
+   - Now handles space-separated values
+   
+3. Updated error messages:
+   - Shows new format in help text
+   - Provides clear examples
+
+====================================================================
+
+BENEFITS:
+====================================================================
+
+✓ Simpler file format - easier to remember in exam
+✓ No need to count dimensions manually
+✓ Auto-detection reduces errors
+✓ Space-separated is faster to type
+✓ More intuitive matrix representation
+✓ Less prone to formatting mistakes
+
+====================================================================
+
+TESTING:
+====================================================================
+
+✓ Transportation Problem: Successfully loads and solves
+✓ Hungarian Method: Successfully loads and solves
+✓ Auto-detection: Correctly identifies dimensions
+✓ Balance checking: Works correctly
+✓ Error messages: Show new format
+
+====================================================================
+
+FILES CREATED:
+====================================================================
+
+- transportation_example.txt: Example 3×4 transportation problem
+- hungarian_example.txt: Example 5×5 assignment problem
+- FILE_FORMATS.txt: Quick reference guide
+- TRANSPORTATION_GUIDE.txt: Updated with new format
+
+====================================================================

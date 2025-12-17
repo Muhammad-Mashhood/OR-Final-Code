@@ -2217,7 +2217,7 @@ def parse_hungarian_problem(filename='problem.txt'):
         matrix = []
         for i, line in enumerate(lines[1:], start=2):
             try:
-                row = [float(x.strip()) for x in line.split(',')]
+                row = [float(x.strip()) for x in line.split()]
                 if not row:
                     continue
                 matrix.append(row)
@@ -2416,6 +2416,692 @@ def solve_hungarian_method():
     
     return assigned, total_cost
 
+
+# ============================================================================
+# TRANSPORTATION PROBLEM
+# ============================================================================
+
+def parse_transportation_problem(filepath):
+    """Parse transportation problem from file"""
+    try:
+        with open(filepath, 'r', encoding='utf-8-sig') as f:
+            content = f.read()
+        
+        # Remove BOM if present
+        content = content.lstrip('\ufeff')
+        lines = [line.strip() for line in content.split('\n') if line.strip()]
+        
+        if not lines:
+            return None
+        
+        # Parse all rows - format is:
+        # Row 1: cost1 cost2 ... costN supply1
+        # Row 2: cost1 cost2 ... costN supply2
+        # ...
+        # Row M: cost1 cost2 ... costN supplyM
+        # Row M+1: demand1 demand2 ... demandN [empty or any value]
+        
+        all_rows = []
+        for line in lines:
+            row = [int(x) for x in line.split()]
+            if row:  # Skip empty rows
+                all_rows.append(row)
+        
+        if len(all_rows) < 2:
+            return None
+        
+        # Last row is demands
+        demand_row = all_rows[-1]
+        
+        # All rows except last contain: [costs..., supply]
+        m = len(all_rows) - 1  # number of sources
+        n = len(demand_row)    # number of destinations
+        
+        cost_matrix = []
+        supply = []
+        
+        for i in range(m):
+            row = all_rows[i]
+            if len(row) == n + 1:  # cost values + supply
+                cost_matrix.append(row[:n])  # All but last value
+                supply.append(row[n])        # Last value is supply
+            else:
+                return None  # Invalid format
+        
+        demand = demand_row[:n]  # First n values are demands
+        
+        return {
+            'sources': m,
+            'destinations': n,
+            'cost_matrix': cost_matrix,
+            'supply': supply,
+            'demand': demand
+        }
+    except:
+        return None
+
+def print_transportation_table(allocation, cost_matrix, supply, demand, title=""):
+    """Print transportation table with allocations"""
+    m = len(supply)
+    n = len(demand)
+    
+    if title:
+        print(f"\n{title}")
+        print("="*80)
+    
+    # Header
+    print("\n" + " "*12, end="")
+    for j in range(n):
+        print(f"D{j+1:^10}", end="")
+    print(f"{'Supply':^12}")
+    print("-"*80)
+    
+    # Rows
+    for i in range(m):
+        print(f"S{i+1:^10} |", end="")
+        for j in range(n):
+            if allocation[i][j] > 0:
+                print(f"{allocation[i][j]:>4}({cost_matrix[i][j]:<2}) ", end="")
+            else:
+                print(f"  - ({cost_matrix[i][j]:<2}) ", end="")
+        print(f" | {supply[i]:>5}")
+    
+    print("-"*80)
+    print(f"{'Demand':^10} |", end="")
+    for j in range(n):
+        print(f"{demand[j]:^10}", end="")
+    print()
+    
+    # Calculate total cost
+    total_cost = 0
+    for i in range(m):
+        for j in range(n):
+            total_cost += allocation[i][j] * cost_matrix[i][j]
+    
+    print(f"\nTotal Transportation Cost: {total_cost}")
+    print()
+
+def northwest_corner_method(cost_matrix, supply, demand):
+    """Northwest Corner Method for initial basic feasible solution"""
+    m = len(supply)
+    n = len(demand)
+    
+    # Create copies to avoid modifying originals
+    supply_copy = supply[:]
+    demand_copy = demand[:]
+    
+    allocation = [[0] * n for _ in range(m)]
+    
+    print("\nNORTHWEST CORNER METHOD")
+    print("="*80)
+    print("\nStarting from top-left corner (S1, D1)")
+    
+    i, j = 0, 0
+    step = 1
+    
+    while i < m and j < n:
+        quantity = min(supply_copy[i], demand_copy[j])
+        allocation[i][j] = quantity
+        
+        print(f"\nStep {step}: Allocate {quantity} to cell (S{i+1}, D{j+1})")
+        print(f"  Supply[S{i+1}] = {supply_copy[i]} - {quantity} = {supply_copy[i] - quantity}")
+        print(f"  Demand[D{j+1}] = {demand_copy[j]} - {quantity} = {demand_copy[j] - quantity}")
+        
+        supply_copy[i] -= quantity
+        demand_copy[j] -= quantity
+        
+        if supply_copy[i] == 0:
+            print(f"  Supply for S{i+1} exhausted, move to next source")
+            i += 1
+        if demand_copy[j] == 0:
+            print(f"  Demand for D{j+1} satisfied, move to next destination")
+            j += 1
+        
+        step += 1
+    
+    return allocation
+
+def least_cost_method(cost_matrix, supply, demand):
+    """Least Cost Method for initial basic feasible solution"""
+    m = len(supply)
+    n = len(demand)
+    
+    supply_copy = supply[:]
+    demand_copy = demand[:]
+    
+    allocation = [[0] * n for _ in range(m)]
+    
+    print("\nLEAST COST METHOD")
+    print("="*80)
+    print("\nAllocating to cells with minimum cost first")
+    
+    step = 1
+    
+    while any(s > 0 for s in supply_copy) and any(d > 0 for d in demand_copy):
+        # Find cell with minimum cost that has supply and demand available
+        min_cost = float('inf')
+        min_i, min_j = -1, -1
+        
+        for i in range(m):
+            for j in range(n):
+                if supply_copy[i] > 0 and demand_copy[j] > 0:
+                    if cost_matrix[i][j] < min_cost:
+                        min_cost = cost_matrix[i][j]
+                        min_i = i
+                        min_j = j
+        
+        if min_i == -1:
+            break
+        
+        quantity = min(supply_copy[min_i], demand_copy[min_j])
+        allocation[min_i][min_j] = quantity
+        
+        print(f"\nStep {step}: Minimum cost = {min_cost} at cell (S{min_i+1}, D{min_j+1})")
+        print(f"  Allocate {quantity} to cell (S{min_i+1}, D{min_j+1})")
+        print(f"  Supply[S{min_i+1}] = {supply_copy[min_i]} - {quantity} = {supply_copy[min_i] - quantity}")
+        print(f"  Demand[D{min_j+1}] = {demand_copy[min_j]} - {quantity} = {demand_copy[min_j] - quantity}")
+        
+        supply_copy[min_i] -= quantity
+        demand_copy[min_j] -= quantity
+        
+        step += 1
+    
+    return allocation
+
+def vogel_approximation_method(cost_matrix, supply, demand):
+    """Vogel's Approximation Method (VAM) for initial basic feasible solution"""
+    m = len(supply)
+    n = len(demand)
+    
+    supply_copy = supply[:]
+    demand_copy = demand[:]
+    
+    allocation = [[0] * n for _ in range(m)]
+    
+    print("\nVOGEL'S APPROXIMATION METHOD (VAM)")
+    print("="*80)
+    print("\nCalculating penalties (difference between two smallest costs)")
+    
+    step = 1
+    
+    while any(s > 0 for s in supply_copy) and any(d > 0 for d in demand_copy):
+        print(f"\nStep {step}:")
+        
+        # Calculate row penalties
+        row_penalties = []
+        for i in range(m):
+            if supply_copy[i] == 0:
+                row_penalties.append(-1)
+                continue
+            
+            costs = []
+            for j in range(n):
+                if demand_copy[j] > 0:
+                    costs.append(cost_matrix[i][j])
+            
+            if len(costs) >= 2:
+                costs.sort()
+                row_penalties.append(costs[1] - costs[0])
+            elif len(costs) == 1:
+                row_penalties.append(costs[0])
+            else:
+                row_penalties.append(-1)
+        
+        # Calculate column penalties
+        col_penalties = []
+        for j in range(n):
+            if demand_copy[j] == 0:
+                col_penalties.append(-1)
+                continue
+            
+            costs = []
+            for i in range(m):
+                if supply_copy[i] > 0:
+                    costs.append(cost_matrix[i][j])
+            
+            if len(costs) >= 2:
+                costs.sort()
+                col_penalties.append(costs[1] - costs[0])
+            elif len(costs) == 1:
+                col_penalties.append(costs[0])
+            else:
+                col_penalties.append(-1)
+        
+        # Print penalties
+        print("  Row Penalties:", [p if p >= 0 else "-" for p in row_penalties])
+        print("  Col Penalties:", [p if p >= 0 else "-" for p in col_penalties])
+        
+        # Find maximum penalty
+        max_row_penalty = max(row_penalties)
+        max_col_penalty = max(col_penalties)
+        
+        if max_row_penalty >= max_col_penalty:
+            # Choose row with max penalty
+            row_idx = row_penalties.index(max_row_penalty)
+            print(f"  Maximum penalty = {max_row_penalty} in Row S{row_idx+1}")
+            
+            # Find minimum cost cell in this row
+            min_cost = float('inf')
+            min_j = -1
+            for j in range(n):
+                if demand_copy[j] > 0 and cost_matrix[row_idx][j] < min_cost:
+                    min_cost = cost_matrix[row_idx][j]
+                    min_j = j
+            
+            i, j = row_idx, min_j
+        else:
+            # Choose column with max penalty
+            col_idx = col_penalties.index(max_col_penalty)
+            print(f"  Maximum penalty = {max_col_penalty} in Column D{col_idx+1}")
+            
+            # Find minimum cost cell in this column
+            min_cost = float('inf')
+            min_i = -1
+            for i in range(m):
+                if supply_copy[i] > 0 and cost_matrix[i][col_idx] < min_cost:
+                    min_cost = cost_matrix[i][col_idx]
+                    min_i = i
+            
+            i, j = min_i, col_idx
+        
+        quantity = min(supply_copy[i], demand_copy[j])
+        allocation[i][j] = quantity
+        
+        print(f"  Allocate {quantity} to cell (S{i+1}, D{j+1}) with cost {cost_matrix[i][j]}")
+        
+        supply_copy[i] -= quantity
+        demand_copy[j] -= quantity
+        
+        step += 1
+    
+    return allocation
+
+def check_degeneracy(allocation, m, n):
+    """Check if solution is degenerate"""
+    basic_cells = 0
+    for i in range(m):
+        for j in range(n):
+            if allocation[i][j] > 0:
+                basic_cells += 1
+    
+    required = m + n - 1
+    
+    print(f"\nDEGENERACY CHECK:")
+    print(f"  Number of allocations: {basic_cells}")
+    print(f"  Required allocations: {required} (m + n - 1 = {m} + {n} - 1)")
+    
+    if basic_cells < required:
+        print(f"  STATUS: DEGENERATE (Need {required - basic_cells} more allocation(s))")
+        print(f"  ACTION: Add epsilon (very small value) to {required - basic_cells} independent cell(s)")
+        return True, required - basic_cells
+    elif basic_cells == required:
+        print(f"  STATUS: NON-DEGENERATE")
+        return False, 0
+    else:
+        print(f"  STATUS: ERROR - Too many allocations")
+        return False, 0
+
+def handle_degeneracy(allocation, cost_matrix, m, n, num_epsilon):
+    """Handle degeneracy by adding epsilon to independent cells"""
+    print(f"\nHANDLING DEGENERACY:")
+    print(f"  Need to add {num_epsilon} epsilon value(s) to independent cell(s)")
+    
+    # Find cells with zero allocation and minimum cost
+    candidates = []
+    for i in range(m):
+        for j in range(n):
+            if allocation[i][j] == 0:
+                candidates.append((cost_matrix[i][j], i, j))
+    
+    candidates.sort()  # Sort by cost
+    
+    added = 0
+    for cost, i, j in candidates:
+        if added >= num_epsilon:
+            break
+        
+        # Check if adding epsilon here maintains independence
+        # (simplified: just add to cheapest empty cells)
+        allocation[i][j] = 0.001  # epsilon
+        print(f"  Added epsilon to cell (S{i+1}, D{j+1}) with cost {cost}")
+        added += 1
+    
+    return allocation
+
+def calculate_uv_values(allocation, cost_matrix, m, n):
+    """Calculate u and v values using u[i] + v[j] = c[i][j] for basic cells"""
+    u = [None] * m
+    v = [None] * n
+    
+    # Start with u[0] = 0
+    u[0] = 0
+    
+    print("\nCALCULATING u AND v VALUES:")
+    print("  Using: u[i] + v[j] = c[i][j] for allocated cells")
+    print("  Starting with u[S1] = 0")
+    
+    # Iteratively calculate u and v
+    changed = True
+    iteration = 1
+    while changed:
+        changed = False
+        
+        for i in range(m):
+            for j in range(n):
+                if allocation[i][j] > 0 or (isinstance(allocation[i][j], float) and allocation[i][j] > 0):
+                    # Basic cell
+                    if u[i] is not None and v[j] is None:
+                        v[j] = cost_matrix[i][j] - u[i]
+                        print(f"  v[D{j+1}] = c[S{i+1},D{j+1}] - u[S{i+1}] = {cost_matrix[i][j]} - {u[i]} = {v[j]}")
+                        changed = True
+                    elif u[i] is None and v[j] is not None:
+                        u[i] = cost_matrix[i][j] - v[j]
+                        print(f"  u[S{i+1}] = c[S{i+1},D{j+1}] - v[D{j+1}] = {cost_matrix[i][j]} - {v[j]} = {u[i]}")
+                        changed = True
+    
+    print(f"\n  u values: {['u[S' + str(i+1) + ']=' + str(u[i]) for i in range(m)]}")
+    print(f"  v values: {['v[D' + str(j+1) + ']=' + str(v[j]) for j in range(n)]}")
+    
+    return u, v
+
+def calculate_opportunity_costs(allocation, cost_matrix, u, v, m, n):
+    """Calculate opportunity costs (Pij = cij - ui - vj) for non-basic cells"""
+    opportunity_costs = [[None] * n for _ in range(m)]
+    
+    print("\nCALCULATING OPPORTUNITY COSTS (Pij = cij - ui - vj):")
+    print("  For non-allocated cells only:")
+    
+    min_cost = float('inf')
+    min_i, min_j = -1, -1
+    
+    for i in range(m):
+        for j in range(n):
+            if allocation[i][j] == 0:
+                # Non-basic cell
+                opportunity_costs[i][j] = cost_matrix[i][j] - u[i] - v[j]
+                print(f"  P[S{i+1},D{j+1}] = {cost_matrix[i][j]} - {u[i]} - {v[j]} = {opportunity_costs[i][j]}")
+                
+                if opportunity_costs[i][j] < min_cost:
+                    min_cost = opportunity_costs[i][j]
+                    min_i = i
+                    min_j = j
+    
+    return opportunity_costs, min_i, min_j, min_cost
+
+def find_loop(allocation, start_i, start_j, m, n):
+    """Find closed loop starting from (start_i, start_j)"""
+    # Find all basic cells
+    basic_cells = []
+    for i in range(m):
+        for j in range(n):
+            if allocation[i][j] > 0 or (isinstance(allocation[i][j], float) and allocation[i][j] > 0):
+                basic_cells.append((i, j))
+    
+    # Add the entering cell
+    basic_cells.append((start_i, start_j))
+    
+    # Try to find a loop using backtracking
+    def find_path(current, path, direction):
+        """direction: 0=horizontal, 1=vertical"""
+        if len(path) > 1 and current == path[0] and len(path) % 2 == 0:
+            return path
+        
+        i, j = current
+        
+        if direction == 0:  # Move horizontally
+            for cell in basic_cells:
+                if cell[0] == i and cell[1] != j and cell not in path:
+                    result = find_path(cell, path + [cell], 1)
+                    if result:
+                        return result
+            # Try closing the loop
+            if (start_i, start_j) in [(c[0], c[1]) for c in basic_cells if c[0] == i and c[1] != j]:
+                if len(path) > 2:
+                    return path + [(start_i, start_j)]
+        else:  # Move vertically
+            for cell in basic_cells:
+                if cell[1] == j and cell[0] != i and cell not in path:
+                    result = find_path(cell, path + [cell], 0)
+                    if result:
+                        return result
+            # Try closing the loop
+            if (start_i, start_j) in [(c[0], c[1]) for c in basic_cells if c[1] == j and c[0] != i]:
+                if len(path) > 2:
+                    return path + [(start_i, start_j)]
+        
+        return None
+    
+    # Start from the entering cell
+    loop = find_path((start_i, start_j), [(start_i, start_j)], 0)
+    if not loop:
+        loop = find_path((start_i, start_j), [(start_i, start_j)], 1)
+    
+    return loop
+
+def print_loop(loop):
+    """Print the loop path with arrows"""
+    if not loop:
+        print("  ERROR: Could not find loop")
+        return
+    
+    print("\n  LOOP PATH:")
+    print("  ", end="")
+    for i, cell in enumerate(loop):
+        if i < len(loop) - 1:
+            print(f"(S{cell[0]+1},D{cell[1]+1}) --> ", end="")
+        else:
+            print(f"(S{cell[0]+1},D{cell[1]+1})")
+    
+    # Mark +/- cells
+    print("\n  LOOP ADJUSTMENTS:")
+    for i, cell in enumerate(loop[:-1]):  # Exclude the last cell as it's same as first
+        sign = '+' if i % 2 == 0 else '-'
+        print(f"    (S{cell[0]+1},D{cell[1]+1}): {sign}")
+
+def adjust_allocation(allocation, loop):
+    """Adjust allocation along the loop"""
+    if not loop or len(loop) < 4:
+        return allocation
+    
+    # Find minimum value in negative cells
+    min_value = float('inf')
+    for i, cell in enumerate(loop[:-1]):
+        if i % 2 == 1:  # Negative cells
+            if allocation[cell[0]][cell[1]] < min_value:
+                min_value = allocation[cell[0]][cell[1]]
+    
+    print(f"\n  Minimum value in negative cells: {min_value}")
+    print(f"  Adjusting allocations by {min_value}:")
+    
+    # Adjust allocations
+    for i, cell in enumerate(loop[:-1]):
+        if i % 2 == 0:  # Positive cells
+            allocation[cell[0]][cell[1]] += min_value
+            print(f"    (S{cell[0]+1},D{cell[1]+1}): {allocation[cell[0]][cell[1]] - min_value} + {min_value} = {allocation[cell[0]][cell[1]]}")
+        else:  # Negative cells
+            allocation[cell[0]][cell[1]] -= min_value
+            print(f"    (S{cell[0]+1},D{cell[1]+1}): {allocation[cell[0]][cell[1]] + min_value} - {min_value} = {allocation[cell[0]][cell[1]]}")
+    
+    return allocation
+
+def modi_method(allocation, cost_matrix, supply, demand):
+    """MODI Method (Modified Distribution Method) for optimization"""
+    m = len(supply)
+    n = len(demand)
+    
+    print("\n" + "="*80)
+    print("APPLYING MODI METHOD (MODIFIED DISTRIBUTION METHOD)")
+    print("="*80)
+    
+    iteration = 1
+    
+    while True:
+        print(f"\n{'='*80}")
+        print(f"ITERATION {iteration}")
+        print("="*80)
+        
+        # Print current allocation
+        print_transportation_table(allocation, cost_matrix, supply, demand, 
+                                  f"Current Allocation (Iteration {iteration})")
+        
+        # Check degeneracy
+        is_degenerate, num_epsilon = check_degeneracy(allocation, m, n)
+        if is_degenerate:
+            allocation = handle_degeneracy(allocation, cost_matrix, m, n, num_epsilon)
+            print_transportation_table(allocation, cost_matrix, supply, demand, 
+                                      "Allocation after handling degeneracy")
+        
+        # Calculate u and v values
+        u, v = calculate_uv_values(allocation, cost_matrix, m, n)
+        
+        # Calculate opportunity costs
+        opp_costs, min_i, min_j, min_cost = calculate_opportunity_costs(
+            allocation, cost_matrix, u, v, m, n)
+        
+        # Check optimality
+        print(f"\n  Minimum opportunity cost: {min_cost}")
+        if min_cost >= 0:
+            print(f"  All opportunity costs are non-negative.")
+            print(f"\n  OPTIMAL SOLUTION REACHED!")
+            break
+        
+        print(f"  Most negative opportunity cost: {min_cost} at cell (S{min_i+1}, D{min_j+1})")
+        print(f"  This cell will enter the basis.")
+        
+        # Find loop
+        print(f"\nFINDING CLOSED LOOP starting from (S{min_i+1}, D{min_j+1}):")
+        loop = find_loop(allocation, min_i, min_j, m, n)
+        
+        if not loop:
+            print("  ERROR: Could not find closed loop. Solution may be incorrect.")
+            break
+        
+        print_loop(loop)
+        
+        # Adjust allocation
+        print(f"\nADJUSTING ALLOCATIONS:")
+        allocation = adjust_allocation(allocation, loop)
+        
+        iteration += 1
+        
+        print("\n" + "-"*80)
+        input("Press Enter to continue to next iteration...")
+    
+    return allocation
+
+def solve_transportation_problem():
+    """Main function for transportation problem"""
+    print("\n" + "="*80)
+    print("   TRANSPORTATION PROBLEM SOLVER")
+    print("="*80)
+    
+    print("\nHow would you like to input the problem?")
+    print("1. Manual Input")
+    print("2. Load from problem.txt")
+    
+    input_choice = get_int_input("\nEnter choice (1-2): ")
+    
+    if input_choice == 2:
+        problem = parse_transportation_problem('problem.txt')
+        if not problem:
+            print("\nError: Could not parse transportation problem from file.")
+            print("File format:")
+            print("  Row 1-M: cost1 cost2 ... costN supply")
+            print("  Row M+1: demand1 demand2 ... demandN")
+            print("\nExample (3 sources, 4 destinations):")
+            print("  19 30 50 10 7")
+            print("  70 30 40 60 9")
+            print("  40 8 70 20 32")
+            print("  7 9 18 14")
+            return
+        
+        m = problem['sources']
+        n = problem['destinations']
+        cost_matrix = problem['cost_matrix']
+        supply = problem['supply']
+        demand = problem['demand']
+        
+        print(f"\nLoaded problem: {m} sources, {n} destinations")
+    else:
+        # Manual input
+        m = get_int_input("\nEnter number of sources (m): ")
+        n = get_int_input("Enter number of destinations (n): ")
+        
+        print(f"\nEnter cost matrix ({m}x{n}):")
+        cost_matrix = []
+        for i in range(m):
+            row = []
+            print(f"Row {i+1} (space-separated): ", end="")
+            values = input().split()
+            for val in values:
+                row.append(int(val))
+            cost_matrix.append(row)
+        
+        print(f"\nEnter supply for {m} sources (space-separated): ", end="")
+        supply = [int(x) for x in input().split()]
+        
+        print(f"Enter demand for {n} destinations (space-separated): ", end="")
+        demand = [int(x) for x in input().split()]
+    
+    # Check if problem is balanced
+    total_supply = sum(supply)
+    total_demand = sum(demand)
+    
+    print(f"\nTotal Supply: {total_supply}")
+    print(f"Total Demand: {total_demand}")
+    
+    if total_supply != total_demand:
+        print("\nWARNING: Problem is UNBALANCED!")
+        print("This solver requires balanced problems.")
+        print("You need to add a dummy source or destination.")
+        return
+    
+    print("\nProblem is BALANCED. Proceeding...")
+    
+    # Choose initial solution method
+    print("\n" + "="*80)
+    print("STEP 1: INITIAL BASIC FEASIBLE SOLUTION")
+    print("="*80)
+    print("\nChoose method for initial solution:")
+    print("1. Northwest Corner Method")
+    print("2. Least Cost Method")
+    print("3. Vogel's Approximation Method (VAM)")
+    
+    method_choice = get_int_input("\nEnter choice (1-3): ")
+    
+    if method_choice == 1:
+        allocation = northwest_corner_method(cost_matrix, supply, demand)
+    elif method_choice == 2:
+        allocation = least_cost_method(cost_matrix, supply, demand)
+    elif method_choice == 3:
+        allocation = vogel_approximation_method(cost_matrix, supply, demand)
+    else:
+        print("Invalid choice. Using Northwest Corner Method.")
+        allocation = northwest_corner_method(cost_matrix, supply, demand)
+    
+    print_transportation_table(allocation, cost_matrix, supply, demand, 
+                              "\nInitial Basic Feasible Solution")
+    
+    input("\nPress Enter to proceed to optimization using MODI method...")
+    
+    # Apply MODI method
+    final_allocation = modi_method(allocation, cost_matrix, supply, demand)
+    
+    # Print final solution
+    print("\n" + "="*80)
+    print("FINAL OPTIMAL SOLUTION")
+    print("="*80)
+    print_transportation_table(final_allocation, cost_matrix, supply, demand, 
+                              "Final Allocation")
+    
+    print("\nDETAILED SHIPPING SCHEDULE:")
+    for i in range(m):
+        for j in range(n):
+            if final_allocation[i][j] > 0:
+                cost = final_allocation[i][j] * cost_matrix[i][j]
+                print(f"  Ship {final_allocation[i][j]} units from S{i+1} to D{j+1} at cost {cost_matrix[i][j]} per unit = {cost}")
+
+
 def main():
     """Main function with menu"""
     print("\n" + "="*80)
@@ -2435,17 +3121,28 @@ def main():
         print("6. Primal to Dual Conversion")
         print("7. Simplex with Matrix Method")
         print("8. Assignment Problem (Hungarian Method)")
-        print("9. Exit")
+        print("9. Transportation Problem (MODI Method)")
+        print("10. Exit")
         print("-"*40)
         
-        choice = get_int_input("Enter your choice (1-9): ")
+        choice = get_int_input("Enter your choice (1-10): ")
         
-        if choice == 9:
+        if choice == 10:
             print("\nThank you for using OR Exam Helper. Good luck!")
             break
         
-        if choice not in [1, 2, 3, 4, 5, 6, 7, 8]:
+        if choice not in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
             print("Invalid choice. Please try again.")
+            continue
+        
+        # Handle Transportation Problem
+        if choice == 9:
+            solve_transportation_problem()
+            
+            another = input("\n\nDo you want to solve another problem? (y/n): ").lower()
+            if another != 'y':
+                print("\nThank you for using OR Exam Helper. Good luck!")
+                break
             continue
         
         # Handle Assignment Problem

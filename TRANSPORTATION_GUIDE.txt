@@ -1,0 +1,164 @@
+====================================================================
+TRANSPORTATION PROBLEM - USER GUIDE
+====================================================================
+
+OVERVIEW:
+The Transportation Problem solver implements complete solution methodology
+with three initial solution methods and MODI optimization algorithm.
+
+====================================================================
+FEATURES:
+====================================================================
+
+1. INITIAL SOLUTION METHODS:
+   - Northwest Corner Method
+   - Least Cost Method
+   - Vogel's Approximation Method (VAM)
+
+2. OPTIMIZATION:
+   - MODI Method (Modified Distribution Method)
+   - Complete step-by-step solution
+   - All intermediate calculations shown
+
+3. DEGENERACY HANDLING:
+   - Automatic detection (when allocations < m + n - 1)
+   - Adds epsilon values to maintain required allocations
+   - Shows which cells receive epsilon
+
+4. DETAILED OUTPUT:
+   - Transportation tables at each iteration
+   - u and v value calculations
+   - Opportunity cost (Pij) calculations
+   - Loop path with arrows (-->)
+   - Sign (+/-) for each cell in loop
+   - Allocation adjustments shown step-by-step
+
+====================================================================
+FILE FORMAT (problem.txt):
+====================================================================
+
+SIMPLE AUTO-DETECT FORMAT:
+Each row contains: cost1 cost2 ... costN supply
+Last row contains: demand1 demand2 ... demandN
+
+The dimensions (M sources, N destinations) are auto-detected.
+
+EXAMPLE (3 sources x 4 destinations):
+--------
+19 30 50 10 7
+70 30 40 60 9
+40 8 70 20 32
+7 9 18 14
+
+Explanation:
+- First 3 rows: cost matrix with supply at end of each row
+- Row 1: costs [19,30,50,10] and supply 7
+- Row 2: costs [70,30,40,60] and supply 9  
+- Row 3: costs [40,8,70,20] and supply 32
+- Last row: demands [7,9,18,14]
+
+====================================================================
+USAGE:
+====================================================================
+
+1. From Main Menu, select option 9 (Transportation Problem)
+
+2. Choose input method:
+   - Manual Input: Enter all data step-by-step
+   - Load from File: Reads from problem.txt
+
+3. Program checks if problem is balanced:
+   - If Total Supply = Total Demand: Proceed
+   - If Unbalanced: Add dummy source/destination manually
+
+4. Choose initial solution method:
+   - Northwest Corner: Fast, starts from top-left
+   - Least Cost: Allocates to minimum cost cells first
+   - VAM: Best initial solution, uses penalties
+
+5. Press Enter to proceed through each iteration:
+   - View current allocation table
+   - See u and v calculations
+   - Review opportunity costs
+   - Observe loop formation
+   - Watch allocation adjustments
+
+6. Solution stops when optimal (all opportunity costs >= 0)
+
+====================================================================
+EXAM PREPARATION TIPS:
+====================================================================
+
+1. INITIAL SOLUTION:
+   - Show all steps of chosen method
+   - Create allocation table after each step
+   - Calculate total cost
+
+2. DEGENERACY:
+   - Count allocations (should be m + n - 1)
+   - If fewer, mention "DEGENERATE" and add epsilon
+   - Show epsilon placement
+
+3. MODI METHOD:
+   - Start with u[S1] = 0
+   - Calculate remaining u and v using ui + vj = cij
+   - Show equation for each calculation
+   - List all u and v values
+
+4. OPPORTUNITY COSTS:
+   - Only calculate for empty cells
+   - Use formula: Pij = cij - ui - vj
+   - Show calculation for each empty cell
+   - Identify most negative
+
+5. LOOP FORMATION:
+   - Start from entering cell
+   - Alternate horizontal/vertical moves
+   - Only use allocated cells (plus entering cell)
+   - Show path with arrows: (S1,D2) --> (S1,D3) --> (S2,D3) --> (S2,D2) --> (S1,D2)
+   - Mark + and - signs
+
+6. ALLOCATION ADJUSTMENT:
+   - Find minimum in negative (-) cells
+   - Add to positive (+) cells
+   - Subtract from negative (-) cells
+   - Show before/after values
+
+7. NEXT ITERATION:
+   - Create new allocation table
+   - Repeat MODI process
+   - Continue until optimal
+
+====================================================================
+REQUIREMENTS FOR FULL MARKS:
+====================================================================
+
+✓ Problem setup (cost matrix, supply, demand)
+✓ Balance check
+✓ Initial solution method name and all steps
+✓ Initial allocation table with costs
+✓ Degeneracy check at each iteration
+✓ u and v calculations with formulas
+✓ All opportunity cost calculations
+✓ Identification of entering cell
+✓ Complete loop path with arrows
+✓ +/- signs for loop cells
+✓ Minimum value identification
+✓ Allocation adjustments with arithmetic
+✓ Updated allocation table
+✓ Repeat until optimal
+✓ Final allocation table
+✓ Final total cost
+
+====================================================================
+COMMON MISTAKES TO AVOID:
+====================================================================
+
+1. Not checking for degeneracy
+2. Forgetting to set u[S1] = 0
+3. Calculating opportunity costs for allocated cells
+4. Not showing loop path clearly
+5. Forgetting +/- signs in loop
+6. Not showing iteration-by-iteration tables
+
+====================================================================
