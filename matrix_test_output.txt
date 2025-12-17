@@ -1,0 +1,120 @@
+
+================================================================================
+   OPERATIONS RESEARCH EXAM HELPER
+   Simplex Method & Big M Method Solver
+================================================================================
+
+----------------------------------------
+MAIN MENU
+----------------------------------------
+1. Simplex Method (Manual Input)
+2. Big M Method (Manual Input)
+3. Dual Simplex Method (Manual Input)
+4. Auto-Detect Method (Manual Input)
+5. Load from File (problem.txt)
+6. Primal to Dual Conversion
+7. Simplex with Matrix Method
+8. Exit
+----------------------------------------
+Enter your choice (1-8): 
+================================================================================
+SIMPLEX WITH MATRIX METHOD
+================================================================================
+
+1. Manual Input
+2. Load from File (problem.txt)
+Enter choice (1-2): 
+Loading problem from 'problem.txt'...
+Problem loaded successfully!
+
+================================================================================
+PROBLEM SUMMARY
+================================================================================
+
+Maximize Z = 1x1 - 1x2 + 3x3
+
+Subject to:
+  1x1 + 1x2 + 1x3 <= 10
+  2x1 + 0x2 - 1x3 <= 2
+  2x1 - 2x2 + 3x3 <= 62
+
+  x1, x2, ... x3 >= 0
+
+Press Enter to solve using Matrix Method...
+################################################################################
+SIMPLEX METHOD - MATRIX NOTATION
+################################################################################
+
+================================================================================
+MATRIX METHOD FORMULAS & NOTATION
+================================================================================
+
+STANDARD FORM: Max Z = CX subject to AX = b, X >= 0
+
+NOTATION:
+  A     = Coefficient matrix of all variables in constraints (m × n)
+  b     = RHS vector (m × 1)
+  C     = Objective function coefficient vector (1 × n)
+  X     = Decision variable vector (n × 1)
+
+PARTITIONED FORM:
+  B     = Basis matrix (coefficients of basic variables) (m × m)
+  N     = Non-basis matrix (coefficients of non-basic variables) (m × (n-m))
+  Cb    = Objective coefficients of basic variables (1 × m)
+  Cn    = Objective coefficients of non-basic variables (1 × (n-m))
+  Xb    = Basic variable values (m × 1)
+  Xn    = Non-basic variable values (n-m × 1) = 0
+
+KEY FORMULAS:
+  1. Xb = B^-1 × b             (Basic variable values)
+  2. Zj - Cj = Cb × B^-1 × Aj - Cj  (Reduced costs)
+  3. b_new = B^-1 × b          (Updated RHS)
+  4. Optimality: All (Zj - Cj) >= 0 for maximization
+
+TABLEAU STRUCTURE:
+  +----+-------+----------------+-------+
+  | Cb | Basis |  Variables     |  Xb   |
+  +----+-------+----------------+-------+
+  | Cb | B     | B^-1 × A       |B^-1×b |
+  +----+-------+----------------+-------+
+  |    | Zj    | Cb×B^-1×Aj     |Cb×Xb  |
+  |    | Zj-Cj | Zj - Cj        |  Z    |
+  +----+-------+----------------+-------+
+
+WHERE:
+  - Each row i shows: B^-1[i,:] × A (updated coefficients)
+  - Xb column shows: B^-1 × b (current basic variable values)
+  - Zj row shows: Cb^T × (B^-1 × A) for each column
+  - Zj-Cj shows optimality indicators
+================================================================================
+
+Press Enter to start solving...
+================================================================================
+ITERATION 0
+================================================================================
+
+--------------------------------------------------------------------------------
+SIMPLEX TABLEAU (Matrix Method)
+--------------------------------------------------------------------------------
+
+Tableau Structure:
+Cb        Basis             x1        x2        x3        s1        s2        s3  Xb=B^-1b
+------------------------------------------------------------------------------------------
+0         s1                 1         1         1         1         0         0        10
+0         s2                 2         0        -1         0         1         0         2
+0         s3                 2        -2         3         0         0         1        62
+------------------------------------------------------------------------------------------
+
+
+STDERR:
+Traceback (most recent call last):
+  File "D:\OR Final Code\final_code.py", line 2045, in <module>
+    main()
+    ~~~~^^
+  File "D:\OR Final Code\final_code.py", line 1943, in main
+    solve_simplex_matrix_method(problem)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\OR Final Code\final_code.py", line 1512, in solve_simplex_matrix_method
+    print(f"{'Zj':<{col_width}}{'':< {col_width}}", end="")
+                               ^^^^^^^^^^^^^^^^^^
+ValueError: Space not allowed in string format specifier
