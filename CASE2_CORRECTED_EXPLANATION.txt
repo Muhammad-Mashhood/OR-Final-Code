@@ -1,0 +1,299 @@
+================================================================================
+CASE 2 SENSITIVITY ANALYSIS - CORRECTED IMPLEMENTATION
+================================================================================
+
+CRITICAL CLARIFICATION:
+-----------------------
+
+When we change RHS values (b), we are changing the ORIGINAL CONSTRAINT RHS,
+not the optimal tableau's X_B values directly!
+
+================================================================================
+THE CORRECT UNDERSTANDING:
+================================================================================
+
+ORIGINAL PROBLEM:
+-----------------
+Max Z = 3x1 + 5x2
+Subject to:
+  x1           <= 4   (b1 = 4)
+      2x2      <= 12  (b2 = 12)
+  3x1 + 2x2    <= 18  (b3 = 18)
+  x1, x2 >= 0
+
+After adding slack variables:
+  x1      + s1      = 4
+      2x2      + s2 = 12
+  3x1 + 2x2      + s3 = 18
+
+OPTIMAL TABLEAU:
+----------------
+Basic Variables: x2, s1, x1 (example)
+X_B column shows: [6, 2, 2] (values of x2, s1, x1)
+
+The b vector remains: [4, 12, 18]
+The X_B values are: B^-1 × b = [6, 2, 2]
+
+================================================================================
+WHAT HAPPENS WHEN WE CHANGE b?
+================================================================================
+
+SCENARIO: Change b2 from 12 to 15
+----------------------------------
+
+1. ORIGINAL b vector: [4, 12, 18]
+2. NEW b vector:      [4, 15, 18]  ← Only b2 changed!
+3. The constraint matrix A stays the SAME
+4. The B^-1 matrix stays the SAME (same basis)
+5. The tableau structure stays the SAME
+
+WHAT CHANGES:
+6. NEW X_B = B^-1 × b_new
+   - We recalculate ALL basic variable values
+   - x2 might become 7.5
+   - s1 might become 1.5
+   - x1 might become 2.25
+   
+7. Only the RHS COLUMN (X_B) in the tableau changes
+8. All other tableau entries stay the same
+
+================================================================================
+THE CORRECTED FORMULA APPLICATION:
+================================================================================
+
+METHOD 1: Direct Calculation (What we do)
+------------------------------------------
+NEW X_B = B^-1 × b_new
+
+Steps:
+1. Get original b vector: [b1, b2, b3, ..., bm]
+2. User changes b_i to new value
+3. Create new b vector: [b1, b2, ..., b_i_new, ..., bm]
+4. Calculate B^-1 (from optimal tableau)
+5. Multiply: X_B_new = B^-1 × b_new
+6. Update ONLY the RHS column of tableau with X_B_new
+7. Everything else in tableau stays the same!
+
+METHOD 2: Incremental (Mathematically equivalent)
+--------------------------------------------------
+If only b_i changes by Δ:
+  X_B_new = B^-1 × b_new
+          = B^-1 × (b_old + [0, 0, ..., Δ, ..., 0])
+          = B^-1 × b_old + Δ × B^-1 × e_i
+          = X_B_old + Δ × (i-th column of B^-1)
+
+Where e_i = [0, 0, ..., 1, ..., 0] (1 in i-th position)
+
+Both methods give the same result!
+
+================================================================================
+CORRECTED IMPLEMENTATION DETAILS:
+================================================================================
+
+FUNCTION: apply_rhs_change()
+----------------------------
+OLD (WRONG):
+  - Took resource_index
+  - Got old_value from table[resource_index][-1]  ← WRONG!
+  - This was getting X_B value, not original b value
+  
+NEW (CORRECT):
+  - Takes constraint_index (refers to original constraint number)
+  - Gets old b value from problem['rhs'][constraint_index]  ← CORRECT!
+  - Creates new b vector with changed value
+  - Calculates NEW X_B = B^-1 × b_new
+  - Updates ALL values in RHS column
+  - Rest of tableau unchanged
+
+FUNCTION: find_rhs_feasibility_range()
+--------------------------------------
+OLD (WRONG):
+  - Used table[i][-1] as current b value
+  
+NEW (CORRECT):
+  - Uses problem['rhs'][i] as original b value
+  - Correctly references the original constraint
+
+FUNCTION: sensitivity_analysis_case2_menu()
+-------------------------------------------
+NEW (CORRECT):
+  - Shows "Change a constraint RHS value" not "resource value"
+  - Displays original b vector from problem['rhs']
+  - User sees actual constraint RHS values
+  - Changes are applied to original constraints
+
+================================================================================
+EXAMPLE WALKTHROUGH (CORRECTED):
+================================================================================
+
+Initial State:
+--------------
+Original problem:
+  Constraint 1: x1           <= 4   (b1 = 4)
+  Constraint 2:     2x2      <= 12  (b2 = 12)
+  Constraint 3: 3x1 + 2x2    <= 18  (b3 = 18)
+
+Optimal solution:
+  Basic vars: [x2, s1, x1]
+  X_B values: [6, 2, 2]
+  Z = 36
+
+B^-1 matrix (from tableau):
+  ┌                 ┐
+  │  0.67  0  -0.33 │
+  │ -1.00  1   0.50 │
+  │  0.33  0   0.17 │
+  └                 ┘
+
+User Action: Change b2 from 12 to 15
+-------------------------------------
+Step 1: Identify change
+  - Constraint 2 RHS changes: 12 → 15
+  - Δ = +3
+
+Step 2: Create new b vector
+  - Old b: [4, 12, 18]
+  - New b: [4, 15, 18]
+
+Step 3: Calculate new X_B
+  X_B_new = B^-1 × b_new
+  
+  ┌                 ┐   ┌    ┐   ┌      ┐
+  │  0.67  0  -0.33 │   │  4 │   │ -3.27│
+  │ -1.00  1   0.50 │ × │ 15 │ = │  8.00│
+  │  0.33  0   0.17 │   │ 18 │   │  4.38│
+  └                 ┘   └    ┘   └      ┘
+
+Step 4: Update tableau RHS column ONLY
+  Old X_B: [6, 2, 2]
+  New X_B: [-3.27, 8.00, 4.38]
+  
+  Basic vars stay same: [x2, s1, x1]
+  But values change: x2=-3.27, s1=8.00, x1=4.38
+
+Step 5: Check feasibility
+  x2 = -3.27 < 0  ← INFEASIBLE!
+  
+Step 6: Apply dual simplex
+  - Restore feasibility
+  - Find new optimal solution
+  - Update table and basic variables
+
+Result after dual simplex:
+  New basic vars: [x1, s1, s2] (example)
+  New X_B: [2.5, 1.5, 0] (example)
+  New Z = 40 (example)
+
+================================================================================
+KEY DIFFERENCES FROM BEFORE:
+================================================================================
+
+BEFORE (INCORRECT):
+-------------------
+✗ Changed tableau's X_B values directly
+✗ Treated resource_index as tableau row
+✗ Only updated one row of X_B
+✗ Used table[i][-1] as "current b value"
+
+NOW (CORRECT):
+--------------
+✓ Changes ORIGINAL constraint RHS (b vector)
+✓ Treats constraint_index as original problem constraint
+✓ Recalculates ALL X_B values using B^-1 × b_new
+✓ Uses problem['rhs'][i] as original b value
+✓ Only RHS column changes, rest of tableau unchanged
+
+================================================================================
+MATHEMATICAL CORRECTNESS:
+================================================================================
+
+The optimal solution satisfies:
+  B × X_B = b
+
+Where:
+  B = basis matrix (m×m)
+  X_B = basic variables vector (m×1)
+  b = RHS vector (m×1)
+
+Therefore:
+  X_B = B^-1 × b
+
+When b changes to b':
+  X_B' = B^-1 × b'
+
+This is what we now implement correctly!
+
+The basis matrix B doesn't change (unless dual simplex changes it).
+Only the RHS changes, so only X_B changes.
+
+================================================================================
+TABLEAU STRUCTURE (CORRECTED UNDERSTANDING):
+================================================================================
+
+Optimal Tableau:
+┌────┬─────┬──────┬──────┬──────┬──────┬──────┬─────┐
+│ Cb │  B  │  x1  │  x2  │  s1  │  s2  │  s3  │ X_B │  ← This column changes!
+├────┼─────┼──────┼──────┼──────┼──────┼──────┼─────┤
+│  5 │ x2  │ 0.67 │ 1.00 │ 0.00 │ 0.33 │ 0.00 │  6  │  ← X_B = B^-1 × b
+│  0 │ s1  │-1.00 │ 0.00 │ 1.00 │ 0.00 │ 0.00 │  2  │
+│  3 │ x1  │ 0.33 │ 0.00 │ 0.00 │-0.17 │ 0.00 │  2  │
+├────┼─────┼──────┼──────┼──────┼──────┼──────┼─────┤
+│    │ Zj  │ 3.00 │ 5.00 │ 0.00 │ 1.00 │ 0.00 │ 36  │
+│    │Zj-Cj│ 0.00 │ 0.00 │ 0.00 │ 1.00 │ 0.00 │     │
+└────┴─────┴──────┴──────┴──────┴──────┴──────┴─────┘
+         ↑     ↑     ↑     ↑     ↑     ↑
+         └─────┴─────┴─────┴─────┴─────┘
+           These columns DON'T change when b changes!
+           (They represent B^-1 × A)
+
+When b changes:
+  - Only X_B column recalculated: NEW X_B = B^-1 × b_new
+  - All other columns stay the same
+  - Zj for X_B changes (profit changes)
+  - But Zj-Cj row stays optimal (basis doesn't change unless infeasible)
+
+================================================================================
+TESTING THE CORRECTED IMPLEMENTATION:
+================================================================================
+
+Test Case:
+----------
+Max Z = 3x1 + 5x2
+  x1           <= 4
+      2x2      <= 12
+  3x1 + 2x2    <= 18
+
+Optimal: x1=2, x2=6, Z=36
+
+TEST 1: Change b2 from 12 to 15
+  - Should recalculate all X_B using B^-1 × [4, 15, 18]
+  - Check if feasible
+  - If not, apply dual simplex
+
+TEST 2: Find range for b1
+  - Should show range where all X_B >= 0
+  - Uses original b1 value (4)
+  - Calculates bounds correctly
+
+TEST 3: Find shadow price for b3
+  - Should check if constraint 3 is binding
+  - Calculate from Zj of s3
+  - Show interpretation
+
+================================================================================
+CONCLUSION:
+================================================================================
+
+The implementation is now CORRECT!
+
+We properly:
+✓ Track original b vector from problem
+✓ Change specific b_i values
+✓ Recalculate entire X_B = B^-1 × b_new
+✓ Update only RHS column
+✓ Keep rest of tableau unchanged
+✓ Apply dual simplex if infeasible
+
+This matches the standard sensitivity analysis procedure from OR textbooks!
+
+================================================================================

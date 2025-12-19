@@ -1,0 +1,302 @@
+================================================================================
+CASE 2: MULTIPLE RHS CHANGES - NEW FEATURE
+================================================================================
+
+FEATURE ADDED: Option to change MULTIPLE constraint RHS values simultaneously
+
+================================================================================
+WHY THIS IS USEFUL:
+================================================================================
+
+In real-world scenarios, multiple resources often change together:
+  • Budget increases AND labor hours increase
+  • Material availability decreases AND storage capacity decreases
+  • Multiple production constraints change due to new equipment
+
+This option allows you to analyze such scenarios in one step!
+
+================================================================================
+HOW TO USE:
+================================================================================
+
+1. Run program: python final_code.py
+2. Select "10. Sensitivity Analysis"
+3. Load/input problem and solve to optimality
+4. Select "2. Change in RHS (Resources/Constraints)"
+5. Select "2. Change multiple constraint RHS values"
+
+The system will:
+  ✓ Show current b vector
+  ✓ Prompt for new values for ALL constraints
+  ✓ Calculate new X_B = B^-1 × b_new
+  ✓ Display comparison table (old vs new)
+  ✓ Check feasibility
+  ✓ Apply dual simplex if needed
+
+================================================================================
+EXAMPLE WALKTHROUGH:
+================================================================================
+
+Original Problem:
+-----------------
+Max Z = 3x1 + 5x2
+Subject to:
+  x1           <= 4   (b1 = 4)
+      2x2      <= 12  (b2 = 12)
+  3x1 + 2x2    <= 18  (b3 = 18)
+
+Optimal: x1=2, x2=6, Z=36
+
+Scenario: What if we have MORE resources?
+------------------------------------------
+Change: b1=4→6, b2=12→15, b3=18→20
+
+System displays:
+┌────────────┬───────────┬───────────┬──────────┐
+│ Constraint │ Old Value │ New Value │  Change  │
+├────────────┼───────────┼───────────┼──────────┤
+│ b1         │    4.0    │    6.0    │   +2.0   │
+│ b2         │   12.0    │   15.0    │   +3.0   │
+│ b3         │   18.0    │   20.0    │   +2.0   │
+└────────────┴───────────┴───────────┴──────────┘
+
+System calculates:
+  B^-1 matrix (shown)
+  New X_B = B^-1 × [6, 15, 20]ᵀ
+
+┌────────────┬───────────┬───────────┬──────────┐
+│ Basic Var  │ Old Value │ New Value │  Change  │
+├────────────┼───────────┼───────────┼──────────┤
+│ x2         │    6.0    │    7.5    │   +1.5   │
+│ s1         │    2.0    │    3.5    │   +1.5   │
+│ x1         │    2.0    │    2.5    │   +0.5   │
+└────────────┴───────────┴───────────┴──────────┘
+
+Feasibility Check:
+  x2 = 7.5 >= 0  [OK]
+  s1 = 3.5 >= 0  [OK]
+  x1 = 2.5 >= 0  [OK]
+
+SOLUTION IS FEASIBLE!
+
+Objective function:
+  Old Z = 36.0
+  New Z = 45.0
+  Change = +9.0
+
+Result: With more resources, profit increases by 9!
+
+================================================================================
+INPUT FORMAT:
+================================================================================
+
+Interactive:
+-----------
+System shows:
+  Current original RHS values (b vector):
+    b1 = 4
+    b2 = 12
+    b3 = 18
+
+  Enter new values for all 3 constraints:
+    Enter new b1: 6
+    Enter new b2: 15
+    Enter new b3: 20
+
+All values must be entered (you can keep some the same as original).
+
+================================================================================
+OUTPUT DETAILS:
+================================================================================
+
+1. COMPARISON TABLE
+   Shows old vs new for each constraint
+   Highlights which constraints actually changed
+
+2. B^-1 MATRIX
+   Displays the inverse of basis matrix used in calculations
+
+3. X_B CALCULATION DETAILS
+   Shows old vs new values for each basic variable
+   Shows how much each changed
+
+4. UPDATED SIMPLEX TABLEAU
+   Full tableau with new RHS column
+   Rest of tableau unchanged
+
+5. FEASIBILITY CHECK
+   Checks each basic variable >= 0
+   Lists any violations
+
+6. IF FEASIBLE:
+   - Shows new objective value
+   - Shows change in objective
+   - Done!
+
+7. IF INFEASIBLE:
+   - Lists negative variables
+   - Automatically applies Dual Simplex Method
+   - Shows iterations until feasibility restored
+   - Returns final feasible solution
+
+================================================================================
+MATHEMATICAL FORMULATION:
+================================================================================
+
+Original b:     [b1,    b2,    b3,    ..., bm]
+New b:          [b1',   b2',   b3',   ..., bm']
+
+Change vector:  Δb = b' - b = [Δb1, Δb2, Δb3, ..., Δbm]
+
+Current solution: X_B = B^-1 × b
+
+New solution:     X_B' = B^-1 × b'
+
+Feasibility: All components of X_B' >= 0
+
+If feasible:
+  New Z = Cb × X_B'
+
+If infeasible:
+  Apply dual simplex to find new optimal basis
+
+================================================================================
+COMPARISON WITH SINGLE CHANGE:
+================================================================================
+
+SINGLE CHANGE (Option 1):
+  • Change one b_i at a time
+  • See impact of individual resource
+  • Good for analyzing one constraint
+
+MULTIPLE CHANGES (Option 2):
+  • Change all b values at once
+  • See combined impact of multiple resources
+  • More realistic for real-world scenarios
+  • Faster than changing one by one
+
+================================================================================
+PRACTICAL APPLICATIONS:
+================================================================================
+
+1. SCENARIO PLANNING
+   "What if ALL our resources increase by 20%?"
+   → Change all b values to 1.2 × original
+
+2. BUDGET REALLOCATION
+   "What if we move resources from constraint 1 to constraint 2?"
+   → Decrease b1, increase b2
+
+3. SUPPLY CHAIN DISRUPTION
+   "What if multiple suppliers reduce delivery?"
+   → Decrease multiple b values
+
+4. CAPACITY EXPANSION
+   "What if we upgrade all facilities?"
+   → Increase all b values
+
+5. SEASONAL VARIATIONS
+   "What are the constraints in peak season?"
+   → Input peak season b values
+
+6. WHAT-IF ANALYSIS
+   "Compare different resource allocation scenarios"
+   → Try different b vector combinations
+
+================================================================================
+TIPS FOR USE:
+================================================================================
+
+✓ Keep track of original values - write them down before changing
+✓ You can enter same values for constraints you don't want to change
+✓ Use this to test "what-if" scenarios quickly
+✓ Compare results with single-change analysis
+✓ If infeasible, let dual simplex run to see new optimal basis
+✓ Check shadow prices after changes to see new marginal values
+
+================================================================================
+ERROR HANDLING:
+================================================================================
+
+✓ Wrong number of values → Error message, retry
+✓ Non-numeric input → Re-prompt for valid number
+✓ All values same as original → Warning, no change
+✓ Infeasible result → Automatic dual simplex
+✓ Dual simplex fails → "Truly infeasible" message
+
+================================================================================
+EXAMPLE TEST CASES:
+================================================================================
+
+Test 1: Uniform increase
+  Change all b values to 120% of original
+  Expected: Higher objective if constraints are binding
+
+Test 2: One constraint tightens, others relax
+  Decrease b1, increase b2 and b3
+  Expected: May shift bottleneck
+
+Test 3: All constraints tighten
+  Decrease all b values
+  Expected: Objective decreases or becomes infeasible
+
+Test 4: No net change
+  Increase some b values, decrease others proportionally
+  Expected: Different solution, possibly similar objective
+
+================================================================================
+FULL MENU OPTIONS (Updated):
+================================================================================
+
+CASE 2: CHANGE IN RHS (RESOURCES/CONSTRAINTS)
+
+Options:
+1. Change a single constraint RHS value        ← Single change
+2. Change multiple constraint RHS values       ← NEW! Multiple changes
+3. Find feasibility range for a constraint
+4. Find shadow price of a constraint
+5. Find ranges for all constraints
+6. Find shadow prices for all constraints
+7. Back to main menu
+
+================================================================================
+IMPLEMENTATION NOTES:
+================================================================================
+
+Function: apply_multiple_rhs_changes()
+
+Algorithm:
+1. Validate input (m values required)
+2. Compare old vs new b vectors
+3. Calculate B^-1 from optimal tableau
+4. Compute X_B_new = B^-1 × b_new
+5. Update tableau RHS column
+6. Check feasibility
+7. If feasible: Calculate and display new Z
+8. If infeasible: Apply dual simplex method
+
+Time Complexity: O(m³) for B^-1 calculation + O(m²) for multiplication
+Space Complexity: O(m²) for storing B^-1
+
+Robustness:
+✓ Handles any combination of changes
+✓ Detects if no changes made
+✓ Properly updates problem['rhs'] for consistency
+✓ Maintains tableau structure
+✓ Seamlessly integrates dual simplex
+
+================================================================================
+CONCLUSION:
+================================================================================
+
+This new option makes Case 2 sensitivity analysis more powerful and practical!
+
+You can now:
+✓ Analyze multiple resource changes simultaneously
+✓ Test realistic scenarios quickly
+✓ Compare different resource allocation strategies
+✓ Save time vs changing constraints one by one
+
+Perfect for exams, homework, and real-world LP analysis!
+
+================================================================================

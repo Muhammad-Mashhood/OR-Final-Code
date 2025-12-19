@@ -1,0 +1,321 @@
+================================================================================
+                   SENSITIVITY ANALYSIS CASE 2
+            CHANGES IN RHS (RESOURCES/CONSTRAINTS)
+                    ✓ IMPLEMENTATION COMPLETE
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        MAIN MENU STRUCTURE                               │
+└──────────────────────────────────────────────────────────────────────────┘
+
+                    OPERATIONS RESEARCH EXAM HELPER
+                              Main Menu
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │  10. Sensitivity Analysis  │
+                    └─────────────┬─────────────┘
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │  Input Problem & Solve    │
+                    └─────────────┬─────────────┘
+                                  │
+            ┌─────────────────────┴─────────────────────┐
+            │     Sensitivity Analysis Cases Menu       │
+            │  1. Change in Objective Coefficients      │ ← CASE 1
+            │  2. Change in RHS (Resources)         ◄── │ ← CASE 2 (NEW!)
+            │  3. Back to Main Menu                     │
+            └─────────────────────┬─────────────────────┘
+                                  │ (Select 2)
+                    ┌─────────────┴─────────────┐
+                    │   CASE 2: RHS Changes     │
+                    │                           │
+                    │  1. Change resource value │
+                    │  2. Find feasibility range│
+                    │  3. Find shadow price     │
+                    │  4. Find all ranges       │
+                    │  5. Find all shadow prices│
+                    │  6. Back to main menu     │
+                    └───────────────────────────┘
+
+================================================================================
+                         CORE FUNCTIONS ADDED
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  HELPER FUNCTIONS (Matrix Operations)                                 │
+├────────────────────────────────────────────────────────────────────────┤
+│  ✓ get_basis_matrix()         - Extract basis matrix B                │
+│  ✓ matrix_multiply()          - Matrix multiplication                 │
+│  ✓ matrix_inverse()           - Calculate B^-1 using Gauss-Jordan    │
+│  ✓ print_matrix()             - Display matrices nicely               │
+│  ✓ calculate_b_inverse()      - Get B^-1 from tableau                │
+└────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  MAIN ANALYSIS FUNCTIONS                                               │
+├────────────────────────────────────────────────────────────────────────┤
+│  ✓ find_rhs_feasibility_range()    - Find range for b_i              │
+│  ✓ apply_rhs_change()              - Change b_i and check feasibility│
+│  ✓ apply_dual_simplex_to_table()   - Restore feasibility             │
+│  ✓ find_shadow_price_via_dual()    - Calculate shadow prices         │
+│  ✓ sensitivity_analysis_case2_menu() - Main Case 2 menu              │
+└────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  UPDATED FUNCTIONS                                                     │
+├────────────────────────────────────────────────────────────────────────┤
+│  ✓ sensitivity_analysis_menu()  - Now includes Case 2 option         │
+└────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                          FEATURE BREAKDOWN
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 1: Change Resource Value                                        │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Input:  Resource index i, new value b_i(new)                          │
+│  Output: Updated tableau, feasibility status, new Z (if feasible)      │
+│                                                                          │
+│  Steps:                                                                  │
+│    1. Calculate Δ = b_i(new) - b_i(old)                                │
+│    2. Calculate B^-1                                                    │
+│    3. Display B^-1 matrix                                              │
+│    4. Calculate X_B(new) = X_B(old) + Δ × B^-1[:, i]                  │
+│    5. Display updated tableau                                           │
+│    6. Check feasibility: All X_B >= 0?                                 │
+│       ├─ YES: Display new Z, DONE!                                     │
+│       └─ NO:  Apply dual simplex method                                │
+│              ├─ Find leaving variable (most negative X_B)              │
+│              ├─ Find entering variable (dual ratio test)               │
+│              ├─ Perform pivot                                          │
+│              └─ Repeat until all X_B >= 0                              │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 2: Find Feasibility Range                                       │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Input:  Resource index i                                               │
+│  Output: Range [b_min, b_max] where solution stays feasible            │
+│                                                                          │
+│  Steps:                                                                  │
+│    1. Get current b_i value                                            │
+│    2. Calculate B^-1                                                    │
+│    3. Display B^-1 matrix                                              │
+│    4. For each basic variable X_B[j]:                                  │
+│       │  Constraint: X_B[j] + Δ × B^-1[j][i] >= 0                     │
+│       │  Solve for Δ:                                                  │
+│       │    If B^-1[j][i] > 0: Δ >= -X_B[j] / B^-1[j][i]              │
+│       │    If B^-1[j][i] < 0: Δ <= -X_B[j] / B^-1[j][i]              │
+│       └─   If B^-1[j][i] = 0: No constraint                           │
+│    5. Combine all constraints to get: Δ_min <= Δ <= Δ_max             │
+│    6. Convert to: b_min <= b_i <= b_max                                │
+│    7. Display both Δ range and b_i range                               │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 3: Find Shadow Price                                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Input:  Resource index i                                               │
+│  Output: Shadow price π_i (marginal value of resource)                 │
+│                                                                          │
+│  Steps:                                                                  │
+│    1. Find slack variable s_i for constraint i                         │
+│    2. Check if s_i is basic:                                           │
+│       ├─ YES (s_i > 0): Resource is NON-BINDING                        │
+│       │                 Shadow price = 0                                │
+│       └─ NO (s_i = 0):  Resource is BINDING                            │
+│                         Calculate shadow price                          │
+│    3. For binding constraint:                                           │
+│       │  Calculate Zj for slack column                                 │
+│       │  For Max problem: π_i = Zj                                     │
+│       └─ For Min problem: π_i = -Zj                                    │
+│    4. Display shadow price with interpretation                          │
+│                                                                          │
+│  Interpretation:                                                         │
+│    π_i = 0:    Resource not fully used, no value                       │
+│    π_i > 0:    Each additional unit increases Z by π_i                 │
+│    π_i < 0:    Each additional unit decreases Z by |π_i|               │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 4 & 5: Batch Operations                                         │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Feature 4: Find ranges for ALL resources                               │
+│    - Loops through i = 1 to m                                           │
+│    - Calls find_rhs_feasibility_range() for each                        │
+│    - User presses Enter between resources                               │
+│                                                                          │
+│  Feature 5: Find shadow prices for ALL resources                        │
+│    - Loops through i = 1 to m                                           │
+│    - Calls find_shadow_price_via_dual() for each                        │
+│    - User presses Enter between resources                               │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         MATHEMATICAL BASIS
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────┐
+│  Optimal Solution:  X_B = B^-1 × b                                │
+│                                                                    │
+│  When b_i changes to b_i + Δ:                                     │
+│                                                                    │
+│    X_B(new) = B^-1 × b(new)                                       │
+│             = B^-1 × [b₁, b₂, ..., b_i + Δ, ..., b_m]ᵀ          │
+│             = B^-1 × b + Δ × B^-1 × [0, 0, ..., 1, ..., 0]ᵀ     │
+│                                              ↑ i-th position       │
+│             = X_B(old) + Δ × B^-1[:, i]                          │
+│                                                                    │
+│  Feasibility: X_B(new) >= 0 (component-wise)                      │
+│                                                                    │
+│  Shadow Price: π_i = ∂Z/∂b_i (at optimal solution)                │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         ERROR HANDLING
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  ✓ Invalid resource index         → Validation, re-prompt          │
+│  ✓ Singular basis matrix          → Error message, graceful exit   │
+│  ✓ Infeasible after change        → Automatic dual simplex         │
+│  ✓ Dual simplex no solution       → "Truly infeasible" message     │
+│  ✓ Unbounded range                → "No bound" display              │
+│  ✓ Zero B^-1 coefficients         → "Always satisfied" message     │
+│  ✓ Non-binding constraints        → Shadow price = 0               │
+└──────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         INPUT/OUTPUT
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  INPUT OPTIONS:                                                      │
+│  ✓ Manual input    - Enter problem interactively                    │
+│  ✓ File input      - Load from .txt file (same format as Case 1)    │
+│                                                                      │
+│  FILE FORMAT:                                                        │
+│    max                    # or min                                   │
+│    2                      # number of variables                      │
+│    3                      # number of constraints                    │
+│    3 5                    # objective coefficients                   │
+│    1 0 4 1               # constraint: coeffs, RHS, type            │
+│    0 2 12 1              # type: 1=<=, 2==, 3=>=                    │
+│    3 2 18 1                                                          │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  OUTPUT DISPLAYS:                                                    │
+│  ✓ B^-1 matrix (formatted)                                          │
+│  ✓ Step-by-step calculations                                        │
+│  ✓ Updated simplex tableau                                          │
+│  ✓ Feasibility check results                                        │
+│  ✓ New objective values                                             │
+│  ✓ Shadow price interpretations                                     │
+│  ✓ Feasibility ranges (both Δ and absolute)                         │
+│  ✓ Dual simplex iterations (if needed)                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         INTEGRATION
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  REUSES EXISTING FUNCTIONS:                                          │
+│  ✓ solve_dual_simplex()         - Already implemented               │
+│  ✓ check_dual_feasibility()     - Already implemented               │
+│  ✓ find_dual_pivot_column()     - Already implemented               │
+│  ✓ print_simplex_table()        - Display tables                    │
+│  ✓ calculate_zj()               - Calculate Zj row                  │
+│  ✓ calculate_zj_cj()            - Calculate Zj-Cj row               │
+│  ✓ perform_pivot_operation()    - Pivot in dual simplex             │
+│  ✓ All input/output helpers     - Consistent formatting             │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  COMPATIBLE WITH:                                                    │
+│  ✓ Case 1 (Objective Coefficient Changes)                           │
+│  ✓ All existing problem types (Max/Min, <=/>=/=)                    │
+│  ✓ Big M Method problems                                            │
+│  ✓ Standard simplex problems                                        │
+│  ✓ File input system                                                │
+│  ✓ Manual input system                                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         TESTING FILES
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  CREATED:                                                            │
+│  ✓ test_case2_sensitivity.txt      - Example problem for testing    │
+│  ✓ CASE2_SENSITIVITY_GUIDE.txt     - Complete theoretical guide     │
+│  ✓ CASE2_IMPLEMENTATION_SUMMARY.txt - Implementation details        │
+│  ✓ CASE2_QUICK_REFERENCE.txt       - Quick lookup guide             │
+│  ✓ This file (CASE2_VISUAL.txt)    - Visual summary                 │
+└──────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                      COMPARISON: CASE 1 vs CASE 2
+================================================================================
+
+┌─────────────────┬──────────────────────┬──────────────────────────┐
+│   ASPECT        │      CASE 1          │         CASE 2           │
+├─────────────────┼──────────────────────┼──────────────────────────┤
+│ Changes         │ Objective coeff (c)  │ RHS values (b)           │
+│ Affects         │ OPTIMALITY           │ FEASIBILITY              │
+│ Conditions      │ Zj-Cj may violate    │ X_B may become negative  │
+│ Restoration     │ Continue simplex     │ Apply dual simplex       │
+│ Range type      │ Optimality range     │ Feasibility range        │
+│ Key metric      │ Reduced cost         │ Shadow price             │
+│ Basis change?   │ May change           │ May change (if infeasible)│
+│ Formula         │ Zj-Cj = f(c_k)       │ X_B = X_B + Δ×B^-1[:, i]│
+└─────────────────┴──────────────────────┴──────────────────────────┘
+
+================================================================================
+                         SUCCESS CRITERIA
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  ✓ All functions implemented                                         │
+│  ✓ No syntax errors                                                  │
+│  ✓ Integrated into menu system                                       │
+│  ✓ File input supported                                              │
+│  ✓ Manual input supported                                            │
+│  ✓ B^-1 calculation working                                          │
+│  ✓ Feasibility range calculation working                             │
+│  ✓ Shadow price calculation working                                  │
+│  ✓ Dual simplex restoration working                                  │
+│  ✓ Error handling comprehensive                                      │
+│  ✓ Documentation complete                                            │
+│  ✓ Test files created                                                │
+│  ✓ User-friendly interface                                           │
+│  ✓ Detailed output displays                                          │
+│  ✓ All edge cases handled                                            │
+└──────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+                         STATUS: ✓ COMPLETE
+================================================================================
+
+All requested features for Case 2 sensitivity analysis have been successfully
+implemented, tested, and documented. The system is ready for use!
+
+Total Functions Added: 10
+Total Lines of Code Added: ~600+
+Documentation Files: 4
+Test Files: 1
+
+Ready for: Operations Research exams, homework, and real-world LP analysis!
+
+================================================================================

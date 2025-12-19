@@ -555,7 +555,7 @@ def perform_pivot_operation (table ,pivot_row ,pivot_col ,basic_vars ,var_names 
     for j in range (num_cols ):
         new_table [pivot_row ][j ]=table [pivot_row ][j ]/pivot_element 
 
-    print ("Step 2: For other rows: New Row = Old Row - (element in pivot column) x New Pivot Row")
+    print ("Step 2: For other rows: New Row = Old Row - (element in pivot column) × New Pivot Row")
 
     for i in range (num_rows ):
         if i !=pivot_row :
@@ -1175,9 +1175,9 @@ def convert_to_dual_and_solve (problem ):
 
     if primal_result is not None and dual_result is not None :
         if abs (primal_result -dual_result )<1e-6 :
-            print ("\nOK VERIFICATION PASSED: Primal and Dual optimal values are equal!")
+            print ("\n✓ VERIFICATION PASSED: Primal and Dual optimal values are equal!")
         else :
-            print ("\nX Warning: Values don't match. This might indicate:")
+            print ("\n✗ Warning: Values don't match. This might indicate:")
             print ("  - Numerical errors in calculation")
             print ("  - Incorrect problem formulation")
             print ("  - Bug in the conversion or solver")
@@ -1319,14 +1319,14 @@ def solve_simplex_matrix_method (problem ):
         print ("\nb (RHS vector):")
         print_vector (b )
 
-        print ("\nXb = B^-1 x b (Basic variable values):")
+        print ("\nXb = B^-1 × b (Basic variable values):")
         print_vector (Xb )
 
         print ("\nCb (Objective coefficients of basic variables):")
         print_vector (Cb )
 
         print ("\nREDUCED COSTS FOR NON-BASIC VARIABLES:")
-        print ("Formula: Zj - Cj = (Cb x B^-1 x Aj) - Cj")
+        print ("Formula: Zj - Cj = (Cb × B^-1 × Aj) - Cj")
         print ()
 
         zj_cj =[]
@@ -1385,7 +1385,7 @@ def solve_simplex_matrix_method (problem ):
         A_entering =[A [i ][entering_var_idx ]for i in range (num_constraints )]
         d =matrix_vector_mult (B_inv ,A_entering )
 
-        print ("\nDIRECTION VECTOR (d = B^-1 x A_entering):")
+        print ("\nDIRECTION VECTOR (d = B^-1 × A_entering):")
         print_vector (d )
 
         print ("\nMINIMUM RATIO TEST:")
@@ -3099,7 +3099,7 @@ def apply_rhs_change (problem ,table ,basic_vars ,var_names ,cj ,cb ,resource_in
         print ("\n[!] Error: Matrix multiplication failed")
         return None ,None ,None 
 
-    print (f"\nCalculating NEW X_B = B^-1 x b_new:")
+    print (f"\nCalculating NEW X_B = B^-1 × b_new:")
     print (f"\nNEW basic variable values:")
 
     new_table =[row [:]for row in table ]
@@ -3107,7 +3107,7 @@ def apply_rhs_change (problem ,table ,basic_vars ,var_names ,cj ,cb ,resource_in
     for j in range (m ):
         old_xb =table [j ][-1 ]
         new_table [j ][-1 ]=new_xb [j ]
-        print (f"  {basic_vars [j ]}: {old_xb :.4g} -> {new_xb [j ]:.4g} (change: {new_xb [j ]-old_xb :+.4g})")
+        print (f"  {basic_vars [j ]}: {old_xb :.4g} → {new_xb [j ]:.4g} (change: {new_xb [j ]-old_xb :+.4g})")
 
     problem ['rhs'][resource_index ]=new_value 
 
@@ -3195,11 +3195,8 @@ def apply_dual_simplex_to_table (table ,basic_vars ,var_names ,cj ,cb ,problem )
 
         if pivot_col ==-1 :
             print ("\n"+"!"*80 )
-            print ("PROBLEM IS INFEASIBLE!")
+            print ("INFEASIBLE SOLUTION - NO ENTERING VARIABLE!")
             print ("!"*80 )
-            print ("\nThe dual simplex method could not find an entering variable.")
-            print ("This means the constraints are contradictory and cannot be")
-            print ("satisfied simultaneously. No feasible solution exists.")
             return None ,None ,None 
 
         print ("\nDual Simplex Ratio Test:")
@@ -3244,7 +3241,7 @@ def find_shadow_price_via_dual (problem ,table ,basic_vars ,var_names ,cj ,cb ,r
     print (f"\n{obj_type } Z = ",end ="")
     terms =[]
     for j in range (n ):
-        coeff =problem ['obj_coef'][j ]
+        coeff =problem ['objective'][j ]
         if coeff !=0 :
             terms .append (f"{coeff }x{j +1 }")
     print (" + ".join (terms ))
@@ -3316,9 +3313,9 @@ def find_shadow_price_via_dual (problem ,table ,basic_vars ,var_names ,cj ,cb ,r
         constraint_str +=" + ".join (terms )if terms else "0"
 
         if problem ['is_max']:
-            constraint_str +=f" >= {problem ['obj_coef'][j ]}"
+            constraint_str +=f" >= {problem ['objective'][j ]}"
         else :
-            constraint_str +=f" <= {problem ['obj_coef'][j ]}"
+            constraint_str +=f" <= {problem ['objective'][j ]}"
         print (constraint_str )
 
     print ("  y1, y2, ... >= 0")
@@ -3380,7 +3377,7 @@ def find_shadow_price_via_dual (problem ,table ,basic_vars ,var_names ,cj ,cb ,r
         if isinstance (slack_value ,str ):
             print (f"  Constraint {i +1 }: Slack = {slack_value }, Shadow Price = {shadow_prices [i ]:.4g}")
         elif slack_value >1e-9 :
-            print (f"  Constraint {i +1 }: Slack = {slack_value :.4g} > 0 => Shadow Price = 0 OK")
+            print (f"  Constraint {i +1 }: Slack = {slack_value :.4g} > 0 => Shadow Price = 0 ✓")
         else :
             print (f"  Constraint {i +1 }: Slack = 0 (Binding) => Shadow Price = {shadow_prices [i ]:.4g}")
 
@@ -3456,7 +3453,7 @@ def apply_multiple_rhs_changes (problem ,table ,basic_vars ,var_names ,cj ,cb ,n
         print ("\n[!] Error: Matrix multiplication failed")
         return None ,None ,None 
 
-    print (f"\nCalculating NEW X_B = B^-1 x b_new:")
+    print (f"\nCalculating NEW X_B = B^-1 × b_new:")
     print (f"\n{'Basic Var':<12} {'Old Value':<12} {'New Value':<12} {'Change':<12}")
     print ("-"*48 )
 
@@ -3556,7 +3553,7 @@ def sensitivity_analysis_case2_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
             if result [0 ]is not None :
                 table ,basic_vars ,cb =result 
-                print ("\n[OK] Constraint RHS value changed successfully!")
+                print ("\n[✓] Constraint RHS value changed successfully!")
             else :
                 print ("\n[!] Could not change constraint RHS value")
         else :
@@ -3582,7 +3579,7 @@ def sensitivity_analysis_case2_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
         if result [0 ]is not None :
             table ,basic_vars ,cb =result 
-            print ("\n[OK] Multiple constraint RHS values changed successfully!")
+            print ("\n[✓] Multiple constraint RHS values changed successfully!")
         else :
             print ("\n[!] Could not change constraint RHS values")
 
@@ -3657,7 +3654,7 @@ def sensitivity_case3_change_nonbasic_column (problem ,table ,basic_vars ,var_na
         print (f"  a{i +1 }{var_index +1 } = {new_column [i ]:.4g}")
 
     print (f"\n{'='*80 }")
-    print ("CALCULATING NEW COLUMN = B^-1 x A_new")
+    print ("CALCULATING NEW COLUMN = B^-1 × A_new")
     print ('='*80 )
 
     new_tableau_column =matrix_multiply (B_inv ,new_column )
@@ -3733,6 +3730,14 @@ def sensitivity_case3_change_basic_column (problem ,table ,basic_vars ,var_names
     print ("Since this column is part of basis B, B^-1 changes!")
     print ("Almost entire tableau needs recalculation.")
 
+    old_B_inv =calculate_b_inverse (table ,basic_vars ,var_names ,problem )
+
+    if old_B_inv is None :
+        print ("\n[!] Error: Could not calculate old B inverse")
+        return None ,None ,None ,None 
+
+    print_matrix (old_B_inv ,"Old B^-1 (Before Change)")
+
     basic_row =basic_vars .index (var_names [var_index ])
     print (f"\n{var_names [var_index ]} is in row {basic_row +1 } of the basis")
 
@@ -3744,81 +3749,53 @@ def sensitivity_case3_change_basic_column (problem ,table ,basic_vars ,var_names
         problem ['constraints'][i ][var_index ]=new_column [i ]
 
     print (f"\n{'='*80 }")
-    print ("STEP 1: BUILD NEW BASIS MATRIX B")
+    print ("RECALCULATING ENTIRE TABLEAU")
     print ('='*80 )
+    print ("\nSince B matrix changed, we use the following approach:")
+    print ("1. Calculate new B^-1 using the modified basis matrix")
+    print ("2. Recalculate all tableau columns: column_j = B^-1_new × A_j")
+    print ("3. Recalculate RHS: X_B = B^-1_new × b")
 
-    print ("\nExtracting basis columns from updated constraint matrix:")
-    B =[]
-    basis_col_indices =[]
-    for bv in basic_vars :
-        if bv in var_names :
-            col_idx =var_names .index (bv )
-            basis_col_indices .append (col_idx )
-            print (f"  {bv } -> column {col_idx +1 } (x{col_idx +1 })")
-
+    print (f"\nNew column for {var_names [var_index ]} (in original A):")
     for i in range (m ):
-        row =[]
-        for col_idx in basis_col_indices :
-            if col_idx <problem ['num_vars']:
-                row .append (problem ['constraints'][i ][col_idx ])
-            else :
-                slack_idx =col_idx -problem ['num_vars']
-                if i ==slack_idx :
-                    row .append (1.0 )
-                else :
-                    row .append (0.0 )
-        B .append (row )
+        print (f"  a{i +1 }{var_index +1 } = {new_column [i ]:.4g}")
 
-    print ("\nNew Basis Matrix B:")
-    print_matrix (B ,"B (New Basis Matrix)")
+    transformed_col =matrix_multiply (old_B_inv ,new_column )
 
-    print (f"\n{'='*80 }")
-    print ("STEP 2: CALCULATE NEW B^-1")
-    print ('='*80 )
+    print (f"\nTransformed new column (B^-1_old × new_A):")
+    for i in range (m ):
+        print (f"  Row {i +1 }: {transformed_col [i ]:.4g}")
 
-    B_inv_new =matrix_inverse (B )
+    pivot_element =transformed_col [basic_row ]
 
-    if B_inv_new is None :
-        print (f"\n[!] ERROR: New basis matrix is singular!")
-        print (f"    The new column cannot form a valid basis.")
+    if abs (pivot_element )<1e-9 :
+        print (f"\n[!] ERROR: Pivot element is zero!")
+        print (f"    The new column cannot replace the basic variable.")
+        print (f"    This means the basis would become singular.")
         return None ,None ,None ,None 
 
-    print_matrix (B_inv_new ,"B^-1 (New Inverse of Basis Matrix)")
-
     print (f"\n{'='*80 }")
-    print ("STEP 3: RECALCULATE ENTIRE TABLEAU")
+    print ("APPLYING ROW OPERATIONS TO MAINTAIN BASIS")
     print ('='*80 )
-    print ("\nUsing formula: Tableau column j = B^-1 × A_j")
-    print ("             RHS (X_B) = B^-1 × b")
+    print (f"\nPivot element: {transformed_col [basic_row ]:.4g} (row {basic_row +1 })")
 
-    new_table =[[0.0 for _ in range (n +1 )]for _ in range (m )]
-
-    print ("\nRecalculating each column:")
-    for j in range (n ):
-        if j <problem ['num_vars']:
-            A_j =[problem ['constraints'][i ][j ]for i in range (m )]
-        else :
-            slack_idx =j -problem ['num_vars']
-            A_j =[1.0 if i ==slack_idx else 0.0 for i in range (m )]
-
-        tableau_col =matrix_multiply (B_inv_new ,A_j )
-
-        print (f"  Column {j +1 } ({var_names [j ]}): ", end ="")
-        if j in basis_col_indices and var_names [j ]in basic_vars :
-            print ("[BASIC - should be unit vector]")
-        else :
-            print ("[NON-BASIC]")
-
-        for i in range (m ):
-            new_table [i ][j ]=tableau_col [i ]
-
-    print ("\nRecalculating RHS (X_B = B^-1 × b):")
-    b =[problem ['rhs'][i ]for i in range (m )]
-    X_B =matrix_multiply (B_inv_new ,b )
+    new_table =[row [:]for row in table ]
 
     for i in range (m ):
-        new_table [i ][-1 ]=X_B [i ]
-        print (f"  {basic_vars [i ]} = {X_B [i ]:.4g}")
+        new_table [i ][var_index ]=transformed_col [i ]
+
+    print (f"\nStep 1: Divide row {basic_row +1 } by {transformed_col [basic_row ]:.4g}")
+    for j in range (n +1 ):
+        new_table [basic_row ][j ]/=pivot_element 
+
+    print (f"\nStep 2: Eliminate other rows")
+    for i in range (m ):
+        if i !=basic_row :
+            factor =new_table [i ][var_index ]
+            if abs (factor )>1e-9 :
+                print (f"  Row {i +1 } = Row {i +1 } - ({factor :.4g}) × Row {basic_row +1 }")
+                for j in range (n +1 ):
+                    new_table [i ][j ]-=factor *new_table [basic_row ][j ]
 
     print (f"\n{'='*80 }")
     print ("UPDATED SIMPLEX TABLE")
@@ -3916,7 +3893,7 @@ def sensitivity_case3_change_all_coefficients (problem ,table ,basic_vars ,var_n
     if basic_changed :
         print ("\n[!] One or more BASIC variable columns changed!")
         print ("    Need to re-solve the problem or use advanced update methods.")
-        print ("\n    For simplicity, we'll recalculate using B^-1 x A_new")
+        print ("\n    For simplicity, we'll recalculate using B^-1 × A_new")
 
     print (f"\n{'='*80 }")
     print ("RECALCULATING TABLEAU COLUMNS")
@@ -3931,7 +3908,7 @@ def sensitivity_case3_change_all_coefficients (problem ,table ,basic_vars ,var_n
 
         print (f"\nColumn {var_names [j ]}:")
         print (f"  A_new: {[f'{x :.4g}'for x in new_A_col ]}")
-        print (f"  B^-1 x A_new: {[f'{x :.4g}'for x in new_tableau_col ]}")
+        print (f"  B^-1 × A_new: {[f'{x :.4g}'for x in new_tableau_col ]}")
 
         for i in range (m ):
             new_table [i ][j ]=new_tableau_col [i ]
@@ -4112,14 +4089,14 @@ def sensitivity_analysis_case3_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
             if result [0 ]is not None :
                 table ,basic_vars ,cj ,cb =result 
-                print ("\n[OK] Coefficient change applied successfully!")
+                print ("\n[✓] Coefficient change applied successfully!")
             else :
                 print ("\n[!] Could not apply coefficient change")
         else :
             print ("Invalid variable choice.")
 
     elif option ==2 :
-        print (f"\nEnter new A matrix ({m } rows x {n } columns):")
+        print (f"\nEnter new A matrix ({m } rows × {n } columns):")
         new_A_matrix =[]
         for i in range (m ):
             print (f"\nConstraint {i +1 }:")
@@ -4134,7 +4111,7 @@ def sensitivity_analysis_case3_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
         if result [0 ]is not None :
             table ,basic_vars ,cj ,cb =result 
-            print ("\n[OK] All coefficients changed successfully!")
+            print ("\n[✓] All coefficients changed successfully!")
         else :
             print ("\n[!] Could not apply coefficient changes")
 
@@ -4168,7 +4145,7 @@ def sensitivity_case4_add_variable (problem ,table ,basic_vars ,var_names ,cj ,c
     print (f"CALCULATING NEW COLUMN FOR {new_var_name }")
     print ('='*80 )
 
-    print (f"\nNew column = B^-1 x A_{new_var_name }")
+    print (f"\nNew column = B^-1 × A_{new_var_name }")
 
     new_tableau_column =matrix_multiply (B_inv ,new_var_coeff )
 
@@ -4181,8 +4158,8 @@ def sensitivity_case4_add_variable (problem ,table ,basic_vars ,var_names ,cj ,c
     print (f"\n{'='*80 }")
     print (f"CALCULATING Zj-Cj FOR {new_var_name }")
     print ('='*80 )
-    print (f"\nZj = Σ(Cb x column) = ",end ="")
-    terms =[f"({cb [i ]:.4g} x {new_tableau_column [i ]:.4g})"for i in range (m )]
+    print (f"\nZj = Σ(Cb × column) = ",end ="")
+    terms =[f"({cb [i ]:.4g} × {new_tableau_column [i ]:.4g})"for i in range (m )]
     print (" + ".join (terms ))
     print (f"Zj = {zj_new :.4g}")
     print (f"\nCj = {new_var_obj :.4g}")
@@ -4208,7 +4185,7 @@ def sensitivity_case4_add_variable (problem ,table ,basic_vars ,var_names ,cj ,c
         new_table .append (new_row )
 
     problem ['num_vars']=original_n +1 
-    problem ['obj_coef'].append (new_var_obj )
+    problem ['objective'].append (new_var_obj )
     for i in range (m ):
         problem ['constraints'][i ].append (new_var_coeff [i ])
 
@@ -4267,7 +4244,7 @@ def sensitivity_analysis_case4_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
     if result [0 ]is not None :
         table ,basic_vars ,var_names ,cj ,cb =result 
-        print ("\n[OK] New variable added successfully!")
+        print ("\n[✓] New variable added successfully!")
     else :
         print ("\n[!] Could not add new variable")
 
@@ -4327,7 +4304,7 @@ def sensitivity_case5_add_constraint (problem ,table ,basic_vars ,var_names ,cj 
         else :
             val =0 
         if new_constraint_coeffs [j ]!=0 :
-            terms .append (f"({new_constraint_coeffs [j ]} x {val :.4g})")
+            terms .append (f"({new_constraint_coeffs [j ]} × {val :.4g})")
     print (" + ".join (terms )if terms else "0")
     print (f"  LHS = {lhs_value :.4g}")
     print (f"  RHS = {new_rhs :.4g}")
@@ -4404,7 +4381,7 @@ def sensitivity_case5_add_constraint (problem ,table ,basic_vars ,var_names ,cj 
                 if abs (coeff_in_new )>1e-9 :
                     print (f"\n  {bv } is basic in row {idx +1 }")
                     print (f"  Coefficient of {bv } in new constraint: {coeff_in_new :.4g}")
-                    print (f"  Subtracting {coeff_in_new :.4g} x Row {idx +1 }")
+                    print (f"  Subtracting {coeff_in_new :.4g} × Row {idx +1 }")
 
                     for j in range (num_total_vars ):
                         new_row [j ]-=coeff_in_new *table [idx ][j ]
@@ -4418,18 +4395,12 @@ def sensitivity_case5_add_constraint (problem ,table ,basic_vars ,var_names ,cj 
         new_slack_name =f"s{m +1 }"
         new_row .append (1 )
         print (f"\nAdding slack variable {new_slack_name } with coefficient +1")
-        new_row .append (new_rhs_transformed )
     else :
         new_slack_name =f"s{m +1 }"
-        print (f"\nFor >= constraint not satisfied, multiply by -1 for dual simplex:")
-        print (f"  Old: ... >= {new_rhs_transformed :.4g}")
-        print (f"  New: ... <= {-new_rhs_transformed :.4g}")
-        new_row =[-x for x in new_row ]
-        new_rhs_transformed =-new_rhs_transformed 
-        new_row .append (1 )
-        print (f"\nAdding slack variable {new_slack_name } with coefficient +1")
-        new_row .append (new_rhs_transformed )
-        print (f"  (RHS is now {new_rhs_transformed :.4g}, will be negative -> dual simplex needed)")
+        new_row .append (-1 )
+        print (f"\nAdding surplus variable {new_slack_name } with coefficient -1")
+
+    new_row .append (new_rhs_transformed )
 
     new_table =[]
     for i in range (m ):
@@ -4542,14 +4513,9 @@ def sensitivity_analysis_case5_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
     if result [0 ]is not None :
         table ,basic_vars ,var_names ,cj ,cb =result 
-        print ("\n[OK] New constraint processed successfully!")
+        print ("\n[✓] New constraint processed successfully!")
     else :
-        print ("\n"+"="*80 )
-        print ("PROBLEM BECAME INFEASIBLE")
-        print ("="*80 )
-        print ("\nThe new constraint is incompatible with the existing constraints.")
-        print ("No feasible solution exists that satisfies all constraints simultaneously.")
-        print ("\n[!] Constraint cannot be added - problem remains at previous optimal solution")
+        print ("\n[!] Could not process new constraint")
 
     return table ,basic_vars ,var_names ,cj ,cb 
 
@@ -4885,7 +4851,7 @@ def solve_ilp_branch_and_bound (problem ):
     m =problem ['num_constraints']
 
     print (f"\n{obj_type } Z = ",end ="")
-    terms =[f"{problem ['obj_coef'][j ]}x{j +1 }"for j in range (n )if problem ['obj_coef'][j ]!=0 ]
+    terms =[f"{problem ['objective'][j ]}x{j +1 }"for j in range (n )if problem ['objective'][j ]!=0 ]
     print (" + ".join (terms ))
 
     print ("\nSubject to:")
@@ -4953,7 +4919,7 @@ def solve_ilp_branch_and_bound (problem ):
 
             if bounds_infeasible :
                 current .status ="infeasible"
-                print ("\n  X INFEASIBLE: Conflicting bounds (lb > ub) - Node pruned")
+                print ("\n  ✗ INFEASIBLE: Conflicting bounds (lb > ub) - Node pruned")
                 continue 
 
         print ("\nSolving LP relaxation...")
@@ -4961,7 +4927,7 @@ def solve_ilp_branch_and_bound (problem ):
 
         if not feasible or opt_val is None :
             current .status ="infeasible"
-            print ("\n  X INFEASIBLE or UNBOUNDED - Node pruned")
+            print ("\n  ✗ INFEASIBLE or UNBOUNDED - Node pruned")
             continue 
 
         current .optimal_value =opt_val 
@@ -4976,28 +4942,28 @@ def solve_ilp_branch_and_bound (problem ):
         if problem ['is_max']:
             if opt_val <=best_value :
                 current .status ="pruned"
-                print (f"\n  X PRUNED: Z = {opt_val :.4f} <= Best = {best_value :.4f}")
+                print (f"\n  ✗ PRUNED: Z = {opt_val :.4f} <= Best = {best_value :.4f}")
                 continue 
         else :
             if opt_val >=best_value :
                 current .status ="pruned"
-                print (f"\n  X PRUNED: Z = {opt_val :.4f} >= Best = {best_value :.4f}")
+                print (f"\n  ✗ PRUNED: Z = {opt_val :.4f} >= Best = {best_value :.4f}")
                 continue 
 
         if is_integer_solution (solution ):
             current .status ="optimal"
-            print ("\n  OK INTEGER SOLUTION FOUND!")
+            print ("\n  ✓ INTEGER SOLUTION FOUND!")
 
             if problem ['is_max']:
                 if opt_val >best_value :
                     best_value =opt_val 
                     best_solution =solution .copy ()
-                    print (f"  OK NEW BEST: Z = {best_value :.4f}")
+                    print (f"  ✓ NEW BEST: Z = {best_value :.4f}")
             else :
                 if opt_val <best_value :
                     best_value =opt_val 
                     best_solution =solution .copy ()
-                    print (f"  OK NEW BEST: Z = {best_value :.4f}")
+                    print (f"  ✓ NEW BEST: Z = {best_value :.4f}")
             continue 
 
         branch_var ,branch_val =find_branching_variable (solution )
@@ -5009,7 +4975,7 @@ def solve_ilp_branch_and_bound (problem ):
         floor_val =math .floor (branch_val )
         ceil_val =math .ceil (branch_val )
 
-        print (f"\n  X Non-integer: {branch_var } = {branch_val :.4f}")
+        print (f"\n  ✗ Non-integer: {branch_var } = {branch_val :.4f}")
         print (f"\n  BRANCHING on {branch_var }:")
         print (f"    Left branch:  {branch_var } <= {floor_val }")
         print (f"    Right branch: {branch_var } >= {ceil_val }")
@@ -5060,16 +5026,16 @@ def solve_ilp_branch_and_bound (problem ):
     print ("="*80 )
 
     def print_tree (node ,prefix ="",is_last =True ):
-        connector ="+-- "if is_last else "+-- "
+        connector ="└── "if is_last else "├── "
         branch_info =f" ({node .branch_var } {node .branch_type })"if node .branch_var else ""
-        status_sym ={"optimal":"OK","infeasible":"X","pruned":"X","branched":"->","pending":"?"}
+        status_sym ={"optimal":"✓","infeasible":"✗","pruned":"✗","branched":"→","pending":"?"}
 
         if node .optimal_value is not None :
             print (f"{prefix }{connector }Node {node .id }{branch_info }: Z={node .optimal_value :.2f} [{status_sym .get (node .status ,'?')} {node .status }]")
         else :
             print (f"{prefix }{connector }Node {node .id }{branch_info }: [{status_sym .get (node .status ,'?')} {node .status }]")
 
-        new_prefix =prefix +("    "if is_last else "|   ")
+        new_prefix =prefix +("    "if is_last else "│   ")
         for i ,child in enumerate (node .children ):
             print_tree (child ,new_prefix ,i ==len (node .children )-1 )
 
@@ -5090,9 +5056,9 @@ def solve_ilp_branch_and_bound (problem ):
         print ("\n"+"-"*40 )
         print ("VERIFICATION")
         print ("-"*40 )
-        obj_val =sum (problem ['obj_coef'][j ]*round (best_solution [f"x{j +1 }"])for j in range (n ))
+        obj_val =sum (problem ['objective'][j ]*round (best_solution [f"x{j +1 }"])for j in range (n ))
         print (f"Z = ",end ="")
-        terms =[f"({problem ['obj_coef'][j ]} x {int (round (best_solution [f'x{j +1 }']))})"for j in range (n )]
+        terms =[f"({problem ['objective'][j ]} × {int (round (best_solution [f'x{j +1 }']))})"for j in range (n )]
         print (" + ".join (terms ))
         print (f"Z = {obj_val }")
 
@@ -5113,12 +5079,12 @@ def solve_ilp_branch_and_bound (problem ):
                 satisfied =lhs >=rhs 
                 op =">="
 
-            status ="OK"if satisfied else "X"
+            status ="✓"if satisfied else "✗"
             print (f"  Constraint {i +1 }: {lhs :.0f} {op } {rhs } {status }")
             all_satisfied =all_satisfied and satisfied 
 
         if all_satisfied :
-            print ("\nOK All constraints satisfied!")
+            print ("\n✓ All constraints satisfied!")
     else :
         print ("\nNo feasible integer solution found.")
 
@@ -5194,7 +5160,7 @@ def solve_tsp_branch_and_bound (dist_matrix ,city_names =None ):
         row_str =f"{city_names [i ]:>4} "
         for j in range (n ):
             if dist_matrix [i ][j ]==INF :
-                row_str +=f"{'INF':>8}"
+                row_str +=f"{'∞':>8}"
             else :
                 row_str +=f"{dist_matrix [i ][j ]:>8.2f}"
         print (row_str )
@@ -5261,7 +5227,7 @@ def solve_tsp_branch_and_bound (dist_matrix ,city_names =None ):
             row_str =f"{i +1 :>4} "
             for j in range (m ):
                 if matrix [i ][j ]==INF :
-                    row_str +=f"{'INF':>8}"
+                    row_str +=f"{'∞':>8}"
                 else :
                     row_str +=f"{matrix [i ][j ]:>8.2f}"
             if row_mins :
@@ -5309,7 +5275,7 @@ def solve_tsp_branch_and_bound (dist_matrix ,city_names =None ):
 
     initial_matrix =[[dist_matrix [i ][j ]if i !=j else INF for j in range (n )]for i in range (n )]
 
-    print_matrix_reduction (initial_matrix ,"Original Matrix (diagonal = INF)")
+    print_matrix_reduction (initial_matrix ,"Original Matrix (diagonal = ∞)")
 
     reduced_matrix ,initial_reduction ,row_mins ,col_mins =reduce_matrix (initial_matrix )
 
@@ -5432,47 +5398,6 @@ def solve_tsp_branch_and_bound (dist_matrix ,city_names =None ):
 
     return best_tour ,best_cost 
 
-def parse_distance_matrix (filename ):
-
-    try :
-        with open (filename ,'r',encoding ='utf-8-sig')as f :
-            lines =f .readlines ()
-
-        if not lines :
-            print ("Error: File is empty")
-            return None 
-
-        n =len (lines )
-        dist_matrix =[]
-        INF =float ('inf')
-
-        for i ,line in enumerate (lines ):
-            values =line .strip ().split ()
-            if len (values )!=n :
-                print (f"Error: Row {i } has {len (values )} values, expected {n }")
-                return None 
-
-            row =[]
-            for val in values :
-                if val .lower ()in ['inf','-1']:
-                    row .append (INF )
-                else :
-                    try :
-                        row .append (float (val ))
-                    except ValueError :
-                        print (f"Error: Invalid value '{val }' in matrix")
-                        return None 
-            dist_matrix .append (row )
-
-        return dist_matrix 
-
-    except FileNotFoundError :
-        print (f"Error: File '{filename }' not found")
-        return None 
-    except Exception as e :
-        print (f"Error reading file: {e }")
-        return None 
-
 def tsp_menu ():
 
     print ("\n"+"="*80 )
@@ -5481,9 +5406,10 @@ def tsp_menu ():
 
     print ("\nInput method:")
     print ("1. Manual Input")
-    print ("2. Load from File (problem.txt)")
+    print ("2. Use 4-city Example")
+    print ("3. Use 5-city Example")
 
-    choice =get_int_input ("\nEnter choice (1-2): ")
+    choice =get_int_input ("\nEnter choice (1-3): ")
 
     INF =float ('inf')
 
@@ -5514,27 +5440,41 @@ def tsp_menu ():
             dist_matrix .append (row )
 
     elif choice ==2 :
-        print ("\nLoading distance matrix from 'problem.txt'...")
-        dist_matrix =parse_distance_matrix ('problem.txt')
-        if dist_matrix is None :
-            print ("Failed to load distance matrix from file.")
-            print ("\nExpected format:")
-            print ("  Space-separated square matrix")
-            print ("  Use 'inf' or '-1' for no direct path")
-            print ("\nExample:")
-            print ("  inf 10 15 20")
-            print ("  10 inf 35 25")
-            print ("  15 35 inf 30")
-            print ("  20 25 30 inf")
-            return 
+        print ("\nUsing 4-city example:")
+        city_names =['A','B','C','D']
+        dist_matrix =[
+        [INF ,10 ,15 ,20 ],
+        [10 ,INF ,35 ,25 ],
+        [15 ,35 ,INF ,30 ],
+        [20 ,25 ,30 ,INF ]
+        ]
 
-        n =len (dist_matrix )
-        print (f"\nLoaded {n }x{n } distance matrix")
+        print ("Cities: A, B, C, D")
+        print ("Distance Matrix:")
+        print ("     A    B    C    D")
+        print ("A    -   10   15   20")
+        print ("B   10    -   35   25")
+        print ("C   15   35    -   30")
+        print ("D   20   25   30    -")
 
-        city_names =[]
-        for i in range (n ):
-            name =input (f"  City {i +1 } name (or press Enter): ").strip ()
-            city_names .append (name if name else str (i +1 ))
+    elif choice ==3 :
+        print ("\nUsing 5-city example:")
+        city_names =['1','2','3','4','5']
+        dist_matrix =[
+        [INF ,20 ,30 ,10 ,11 ],
+        [15 ,INF ,16 ,4 ,2 ],
+        [3 ,5 ,INF ,2 ,4 ],
+        [19 ,6 ,18 ,INF ,3 ],
+        [16 ,4 ,7 ,16 ,INF ]
+        ]
+
+        print ("Distance Matrix:")
+        print ("      1    2    3    4    5")
+        print ("1     -   20   30   10   11")
+        print ("2    15    -   16    4    2")
+        print ("3     3    5    -    2    4")
+        print ("4    19    6   18    -    3")
+        print ("5    16    4    7   16    -")
 
     else :
         print ("Invalid choice.")
@@ -5587,9 +5527,9 @@ def solve_01_knapsack (weights ,values ,capacity ,item_names =None ):
         wi =weights [item_idx ]
         vi =values [item_idx ]
 
-        print (f"\n{'-'*60 }")
+        print (f"\n{'─'*60 }")
         print (f"Processing {item_names [item_idx ]} (weight={wi }, value={vi })")
-        print (f"{'-'*60 }")
+        print (f"{'─'*60 }")
 
         for w in range (capacity +1 ):
             if wi >w :
@@ -5673,7 +5613,7 @@ def solve_01_knapsack (weights ,values ,capacity ,item_names =None ):
 
     return total_value ,selected 
 
-def solve_unbounded_knapsack (weights ,values ,capacity ,item_names =None ):
+def solve_fractional_knapsack (weights ,values ,capacity ,item_names =None ):
 
     n =len (weights )
 
@@ -5681,134 +5621,94 @@ def solve_unbounded_knapsack (weights ,values ,capacity ,item_names =None ):
         item_names =[f"Item {i +1 }"for i in range (n )]
 
     print ("\n"+"#"*80 )
-    print ("   UNBOUNDED KNAPSACK - DYNAMIC PROGRAMMING")
+    print ("   FRACTIONAL KNAPSACK - GREEDY METHOD")
     print ("#"*80 )
 
     print ("\n"+"="*80 )
     print ("PROBLEM DATA")
     print ("="*80 )
     print (f"\nKnapsack Capacity: {capacity }")
-    print (f"\nItems (unlimited quantity):")
+    print (f"\nItems:")
     print (f"{'Item':<15} {'Weight':<10} {'Value':<10} {'Value/Weight':<12}")
     print ("-"*47 )
+
+    items =[]
     for i in range (n ):
         ratio =values [i ]/weights [i ]if weights [i ]>0 else float ('inf')
+        items .append ((i ,weights [i ],values [i ],ratio ))
         print (f"{item_names [i ]:<15} {weights [i ]:<10} {values [i ]:<10} {ratio :<12.2f}")
 
     print ("\n"+"="*80 )
-    print ("DYNAMIC PROGRAMMING APPROACH")
+    print ("GREEDY APPROACH")
     print ("="*80 )
-    print ("\nRecurrence Relation:")
-    print ("  V[w] = max(V[w], V[w-wi] + vi) for all items i where wi <= w")
-    print ("\nWhere:")
-    print ("  V[w] = max value achievable with capacity w")
-    print ("  Can use each item unlimited times")
+    print ("\nStrategy: Select items with highest value/weight ratio first")
+    print ("Can take fractions of items (unlike 0/1 knapsack)")
 
-    V =[0 ]*(capacity +1 )
-    item_used =[[] for _ in range (capacity +1 )]
+    items .sort (key =lambda x :x [3 ],reverse =True )
 
     print ("\n"+"="*80 )
-    print ("BUILDING DP TABLE")
+    print ("STEP 1: SORT BY VALUE/WEIGHT RATIO (DESCENDING)")
     print ("="*80 )
-
-    for w in range (1 ,capacity +1 ):
-        for i in range (n ):
-            if weights [i ]<=w :
-                new_value =V [w -weights [i ]]+values [i ]
-                if new_value >V [w ]:
-                    V [w ]=new_value 
-                    item_used [w ]=item_used [w -weights [i ]]+[i ]
-                    if w <=10 or w ==capacity :
-                        print (f"  V[{w }] updated to {V [w ]} by adding {item_names [i ]}")
+    print (f"\n{'Rank':<6} {'Item':<15} {'Weight':<10} {'Value':<10} {'Ratio':<12}")
+    print ("-"*53 )
+    for rank ,(i ,w ,v ,r )in enumerate (items ,1 ):
+        print (f"{rank :<6} {item_names [i ]:<15} {w :<10} {v :<10} {r :<12.2f}")
 
     print ("\n"+"="*80 )
-    print ("DP VALUES")
+    print ("STEP 2: FILL KNAPSACK GREEDILY")
     print ("="*80 )
-    print (f"\n{'Capacity':<10} {'Max Value':<10}")
-    print ("-"*20 )
-    for w in range (0 ,min (11 ,capacity +1 )):
-        print (f"{w :<10} {V [w ]:<10}")
-    if capacity >10 :
-        print ("...")
-        print (f"{capacity :<10} {V [capacity ]:<10}")
 
-    from collections import Counter 
-    item_counts =Counter (item_used [capacity ])
+    remaining_capacity =capacity 
+    total_value =0 
+    selected =[]
+
+    for i ,w ,v ,r in items :
+        print (f"\n{'─'*50 }")
+        print (f"Considering {item_names [i ]} (w={w }, v={v }, ratio={r :.2f})")
+        print (f"Remaining capacity: {remaining_capacity }")
+
+        if remaining_capacity <=0 :
+            print ("  → Knapsack is full!")
+            break 
+
+        if w <=remaining_capacity :
+            fraction =1.0 
+            value_added =v 
+            weight_added =w 
+            print (f"  → Take WHOLE item (w={w } <= capacity={remaining_capacity })")
+        else :
+            fraction =remaining_capacity /w 
+            value_added =v *fraction 
+            weight_added =remaining_capacity 
+            print (f"  → Take FRACTION: {remaining_capacity }/{w } = {fraction :.4f}")
+            print (f"  → Value added: {v } × {fraction :.4f} = {value_added :.2f}")
+
+        selected .append ((i ,fraction ,weight_added ,value_added ))
+        total_value +=value_added 
+        remaining_capacity -=weight_added 
+
+        print (f"  → Total value so far: {total_value :.2f}")
+        print (f"  → Remaining capacity: {remaining_capacity :.2f}")
 
     print ("\n"+"="*80 )
     print ("OPTIMAL SOLUTION")
     print ("="*80 )
 
-    total_weight =sum (item_counts [i ]*weights [i ]for i in item_counts )
-    total_value =V [capacity ]
+    total_weight =sum (w for _ ,_ ,w ,_ in selected )
 
     print (f"\nSelected Items:")
-    print (f"{'Item':<15} {'Quantity':<10} {'Weight':<10} {'Value':<10}")
-    print ("-"*45 )
-    for i in sorted (item_counts .keys ()):
-        qty =item_counts [i ]
-        w =qty *weights [i ]
-        v =qty *values [i ]
-        print (f"{item_names [i ]:<15} {qty :<10} {w :<10} {v :<10}")
-    print ("-"*45 )
-    print (f"{'TOTAL':<15} {'':<10} {total_weight :<10} {total_value :<10}")
+    print (f"{'Item':<15} {'Fraction':<12} {'Weight':<10} {'Value':<10}")
+    print ("-"*47 )
+    for i ,frac ,w ,v in selected :
+        frac_str ="1 (whole)"if frac ==1 else f"{frac :.4f}"
+        print (f"{item_names [i ]:<15} {frac_str :<12} {w :<10.2f} {v :<10.2f}")
+    print ("-"*47 )
+    print (f"{'TOTAL':<15} {'':<12} {total_weight :<10.2f} {total_value :<10.2f}")
 
-    print (f"\nMaximum Value = {total_value }")
-    print (f"Total Weight = {total_weight } (Capacity = {capacity })")
+    print (f"\nMaximum Value = {total_value :.2f}")
+    print (f"Total Weight = {total_weight :.2f} (Capacity = {capacity })")
 
-    return total_value ,item_counts 
-
-def parse_knapsack_problem (filename ='problem.txt'):
-
-    try :
-        with open (filename ,'r',encoding ='utf-8-sig')as f :
-            lines =[line .strip ()for line in f .readlines ()if line .strip ()]
-
-        if not lines :
-            print (f"Error: File '{filename }' is empty")
-            return None 
-
-        capacity =int (lines [0 ])
-
-        weights =[]
-        values =[]
-        item_names =[]
-
-        for i ,line in enumerate (lines [1 :],start =1 ):
-            parts =line .split ()
-            if len (parts )==2 :
-                weights .append (int (parts [0 ]))
-                values .append (int (parts [1 ]))
-                item_names .append (f"Item {i }")
-            elif len (parts )==3 :
-                weights .append (int (parts [0 ]))
-                values .append (int (parts [1 ]))
-                item_names .append (parts [2 ])
-            else :
-                print (f"Error: Invalid format on line {i +1 }: {line }")
-                return None 
-
-        if not weights :
-            print ("Error: No items found in file")
-            return None 
-
-        return {
-            'capacity':capacity ,
-            'weights':weights ,
-            'values':values ,
-            'item_names':item_names ,
-            'n':len (weights )
-        }
-
-    except FileNotFoundError :
-        print (f"Error: File '{filename }' not found")
-        return None 
-    except ValueError as e :
-        print (f"Error parsing file: {e }")
-        return None 
-    except Exception as e :
-        print (f"Error reading file: {e }")
-        return None 
+    return total_value ,selected 
 
 def knapsack_menu ():
 
@@ -5818,13 +5718,13 @@ def knapsack_menu ():
 
     print ("\nSelect type:")
     print ("1. 0/1 Knapsack (Dynamic Programming)")
-    print ("2. Unbounded Knapsack (Dynamic Programming)")
+    print ("2. Fractional Knapsack (Greedy Method)")
 
     type_choice =get_int_input ("\nEnter choice (1-2): ")
 
     print ("\nInput method:")
     print ("1. Manual Input")
-    print ("2. Load from File (problem.txt)")
+    print ("2. Use Example Problem")
 
     input_choice =get_int_input ("\nEnter choice (1-2): ")
 
@@ -5843,30 +5743,17 @@ def knapsack_menu ():
             values .append (get_int_input (f"  Value of {item_names [i ]}: "))
 
     elif input_choice ==2 :
-        print ("\nLoading knapsack problem from 'problem.txt'...")
-        problem =parse_knapsack_problem ('problem.txt')
-        if problem is None :
-            print ("Failed to load problem from file.")
-            print ("\nExpected format:")
-            print ("  Line 1: Capacity")
-            print ("  Line 2+: Weight Value [ItemName]")
-            print ("\nExample:")
-            print ("  50")
-            print ("  10 60 Item1")
-            print ("  20 100 Item2")
-            print ("  30 120 Item3")
-            return 
+        print ("\nUsing example problem:")
+        print ("Capacity = 50")
+        print ("Items: (Weight, Value)")
+        print ("  Item 1: (10, 60)")
+        print ("  Item 2: (20, 100)")
+        print ("  Item 3: (30, 120)")
 
-        capacity =problem ['capacity']
-        weights =problem ['weights']
-        values =problem ['values']
-        item_names =problem ['item_names']
-        n =problem ['n']
-
-        print (f"\nLoaded {n } items with capacity {capacity }")
-        print ("\nItems loaded:")
-        for i in range (n ):
-            print (f"  {item_names [i ]}: Weight={weights [i ]}, Value={values [i ]}")
+        capacity =50 
+        weights =[10 ,20 ,30 ]
+        values =[60 ,100 ,120 ]
+        item_names =["Item 1","Item 2","Item 3"]
 
     else :
         print ("Invalid choice.")
@@ -5877,103 +5764,9 @@ def knapsack_menu ():
     if type_choice ==1 :
         solve_01_knapsack (weights ,values ,capacity ,item_names )
     elif type_choice ==2 :
-        solve_unbounded_knapsack (weights ,values ,capacity ,item_names )
+        solve_fractional_knapsack (weights ,values ,capacity ,item_names )
     else :
         print ("Invalid knapsack type.")
-
-def dijkstra_shortest_path (dist_matrix ,start ,end ,node_names =None ):
-
-    n =len (dist_matrix )
-    INF =float ('inf')
-
-    if node_names is None :
-        node_names =[str (i )for i in range (n )]
-
-    distances =[INF ]*n 
-    distances [start ]=0 
-    visited =[False ]*n 
-    parent =[-1 ]*n 
-
-    print ("\n"+"#"*80 )
-    print ("   SHORTEST PATH - DIJKSTRA'S ALGORITHM")
-    print ("#"*80 )
-
-    print ("\n"+"="*80 )
-    print ("PROBLEM")
-    print ("="*80 )
-    print (f"\nFind shortest path from {node_names [start ]} to {node_names [end ]}")
-
-    print ("\n"+"="*80 )
-    print ("DISTANCE MATRIX")
-    print ("="*80 )
-
-    max_name_len =max (len (name )for name in node_names )
-    header =" "*(max_name_len +2 )+"".join ([f"{node_names [j ]:<8}"for j in range (n )])
-    print ("\n"+header )
-    print ("-"*len (header ))
-    for i in range (n ):
-        row_str =f"{node_names [i ]:<{max_name_len +2}}"
-        for j in range (n ):
-            val =dist_matrix [i ][j ]
-            if val ==INF :
-                row_str +="inf     "
-            else :
-                row_str +=f"{val :<8.1f}"
-        print (row_str )
-
-    print ("\n"+"="*80 )
-    print ("DIJKSTRA'S ALGORITHM EXECUTION")
-    print ("="*80 )
-
-    for iteration in range (n ):
-        min_dist =INF 
-        u =-1 
-        for i in range (n ):
-            if not visited [i ]and distances [i ]<min_dist :
-                min_dist =distances [i ]
-                u =i 
-
-        if u ==-1 or min_dist ==INF :
-            break 
-
-        visited [u ]=True 
-
-        print (f"\nIteration {iteration +1 }:")
-        print (f"  Select node {node_names [u ]} with distance {distances [u ]}")
-
-        for v in range (n ):
-            if not visited [v ]and dist_matrix [u ][v ]!=INF :
-                new_dist =distances [u ]+dist_matrix [u ][v ]
-                if new_dist <distances [v ]:
-                    old_dist =distances [v ]
-                    distances [v ]=new_dist 
-                    parent [v ]=u 
-                    print (f"    Update {node_names [v ]}: {old_dist } -> {new_dist } via {node_names [u ]}")
-
-    print ("\n"+"="*80 )
-    print ("SHORTEST PATH RESULT")
-    print ("="*80 )
-
-    if distances [end ]==INF :
-        print (f"\nNo path exists from {node_names [start ]} to {node_names [end ]}")
-        return INF ,[] 
-
-    path =[]
-    current =end 
-    while current !=-1 :
-        path .append (current )
-        current =parent [current ]
-    path .reverse ()
-
-    print (f"\nPath: {' -> '.join ([node_names [i ]for i in path ])}")
-    print (f"Total Distance: {distances [end ]}")
-
-    print ("\nPath Details:")
-    for i in range (len (path )-1 ):
-        u ,v =path [i ],path [i +1 ]
-        print (f"  {node_names [u ]} -> {node_names [v ]}: {dist_matrix [u ][v ]}")
-
-    return distances [end ],path 
 
 def solve_min_cost_path (grid ):
 
@@ -6017,7 +5810,7 @@ def solve_min_cost_path (grid ):
     call_log =[]
     call_tree =[]
 
-    def min_cost_recursive (i ,j ,depth =0 ,prefix ="",is_last =True ):
+    def min_cost_recursive (i ,j ,depth =0 ):
 
         indent ="  "*depth 
         call_id =len (call_log )+1 
@@ -6025,55 +5818,36 @@ def solve_min_cost_path (grid ):
         call_info =f"{indent }Call #{call_id }: minCost({i }, {j })"
 
         if i >=rows or j >=cols :
-            call_log .append (f"{call_info } -> INF (out of bounds)")
-            tree_node =f"{prefix }({'`-- 'if is_last else '|-- '}minCost({i },{j }) = INF (out of bounds)"
-            call_tree .append (tree_node )
+            call_log .append (f"{call_info } → ∞ (out of bounds)")
             return float ('inf')
 
         if i ==rows -1 and j ==cols -1 :
             result =grid [i ][j ]
-            call_log .append (f"{call_info } -> {result } (destination)")
-            tree_node =f"{prefix }({'`-- 'if is_last else '|-- '}minCost({i },{j }) = {result } (BASE: destination)"
-            call_tree .append (tree_node )
+            call_log .append (f"{call_info } → {result } (destination)")
             return result 
 
         if (i ,j )in memo :
-            call_log .append (f"{call_info } -> {memo [(i ,j )]} (from memo)")
-            tree_node =f"{prefix }({'`-- 'if is_last else '|-- '}minCost({i },{j }) = {memo [(i ,j )]} (MEMO)"
-            call_tree .append (tree_node )
+            call_log .append (f"{call_info } → {memo [(i ,j )]} (from memo)")
             return memo [(i ,j )]
 
         call_log .append (f"{call_info }")
-        tree_node =f"{prefix }({'`-- 'if is_last else '|-- '}minCost({i },{j })"
-        call_tree .append (tree_node )
 
-        new_prefix =prefix +("    "if is_last else "|   ")
-
-        down =min_cost_recursive (i +1 ,j ,depth +1 ,new_prefix ,False )
-        right =min_cost_recursive (i ,j +1 ,depth +1 ,new_prefix ,True )
+        down =min_cost_recursive (i +1 ,j ,depth +1 )
+        right =min_cost_recursive (i ,j +1 ,depth +1 )
 
         result =grid [i ][j ]+min (down ,right )
         memo [(i ,j )]=result 
 
         direction ="DOWN"if down <=right else "RIGHT"
-        call_log .append (f"{indent }  -> minCost({i }, {j }) = {grid [i ][j ]} + min({down }, {right }) = {result } [go {direction }]")
-        call_tree .append (f"{new_prefix }    => {grid [i ][j ]} + min({down }, {right }) = {result }")
+        call_log .append (f"{indent }  → minCost({i }, {j }) = {grid [i ][j ]} + min({down }, {right }) = {result } [go {direction }]")
 
         return result 
 
     print ("\n"+"="*80 )
-    print ("RECURSIVE CALL TREE")
+    print ("RECURSIVE CALL TRACE")
     print ("="*80 )
 
-    optimal_cost =min_cost_recursive (0 ,0 ,0 ,"",True )
-
-    print ("\nTree Structure:")
-    for node in call_tree :
-        print (node )
-
-    print ("\n"+"="*80 )
-    print ("RECURSIVE CALL TRACE (DETAILED)")
-    print ("="*80 )
+    optimal_cost =min_cost_recursive (0 ,0 )
 
     print ()
     for log in call_log :
@@ -6091,20 +5865,20 @@ def solve_min_cost_path (grid ):
     while i <rows -1 or j <cols -1 :
         if i ==rows -1 :
             j +=1 
-            print (f"  -> Move RIGHT to ({i }, {j }), cost = {grid [i ][j ]}")
+            print (f"  → Move RIGHT to ({i }, {j }), cost = {grid [i ][j ]}")
         elif j ==cols -1 :
             i +=1 
-            print (f"  -> Move DOWN to ({i }, {j }), cost = {grid [i ][j ]}")
+            print (f"  → Move DOWN to ({i }, {j }), cost = {grid [i ][j ]}")
         else :
             down_cost =memo .get ((i +1 ,j ),float ('inf'))
             right_cost =memo .get ((i ,j +1 ),float ('inf'))
 
             if down_cost <=right_cost :
                 i +=1 
-                print (f"  -> Move DOWN to ({i }, {j }), cost = {grid [i ][j ]} (down path cost: {down_cost }, right path cost: {right_cost })")
+                print (f"  → Move DOWN to ({i }, {j }), cost = {grid [i ][j ]} (down path cost: {down_cost }, right path cost: {right_cost })")
             else :
                 j +=1 
-                print (f"  -> Move RIGHT to ({i }, {j }), cost = {grid [i ][j ]} (down path cost: {down_cost }, right path cost: {right_cost })")
+                print (f"  → Move RIGHT to ({i }, {j }), cost = {grid [i ][j ]} (down path cost: {down_cost }, right path cost: {right_cost })")
 
         path .append ((i ,j ))
 
@@ -6130,7 +5904,7 @@ def solve_min_cost_path (grid ):
     print ("="*80 )
 
     print (f"\nOptimal Path: ",end ="")
-    path_str =" -> ".join ([f"({i },{j })"for i ,j in path ])
+    path_str =" → ".join ([f"({i },{j })"for i ,j in path ])
     print (path_str )
 
     print (f"\nPath Cost Calculation:")
@@ -6159,180 +5933,58 @@ def solve_min_cost_path (grid ):
 def min_cost_path_menu ():
 
     print ("\n"+"="*80 )
-    print ("SHORTEST PATH PROBLEMS")
+    print ("MINIMUM COST PATH")
     print ("="*80 )
 
-    print ("\nProblem type:")
-    print ("1. Shortest Path between Two Nodes (Dijkstra)")
-    print ("2. Visit All Nodes and Return (TSP from start node)")
-    print ("3. Grid Path (Top-left to Bottom-right)")
+    print ("\nInput method:")
+    print ("1. Manual Input")
+    print ("2. Use Example 1 (3x3 grid)")
+    print ("3. Use Example 2 (4x4 grid)")
 
-    problem_type =get_int_input ("\nEnter choice (1-3): ")
+    choice =get_int_input ("\nEnter choice (1-3): ")
 
-    if problem_type ==1 or problem_type ==2 :
+    if choice ==1 :
+        rows =get_int_input ("Enter number of rows: ")
+        cols =get_int_input ("Enter number of columns: ")
 
-        print ("\nInput method:")
-        print ("1. Manual Input")
-        print ("2. Load from File (problem.txt)")
+        print (f"\nEnter the {rows }x{cols } grid:")
+        grid =[]
+        for i in range (rows ):
+            row =[]
+            for j in range (cols ):
+                val =get_int_input (f"  grid[{i }][{j }]: ")
+                row .append (val )
+            grid .append (row )
 
-        choice =get_int_input ("\nEnter choice (1-2): ")
+    elif choice ==2 :
+        print ("\nUsing 3x3 example:")
+        grid =[
+        [1 ,2 ,3 ],
+        [4 ,8 ,2 ],
+        [1 ,5 ,3 ]
+        ]
+        print ("Grid:")
+        for row in grid :
+            print (f"  {row }")
 
-        INF =float ('inf')
-
-        if choice ==1 :
-            n =get_int_input ("Enter number of nodes: ")
-
-            print ("\nEnter node names (or press Enter for numbers):")
-            node_names =[]
-            for i in range (n ):
-                name =input (f"  Node {i +1 } name: ").strip ()
-                node_names .append (name if name else str (i +1 ))
-
-            print (f"\nEnter distance matrix ({n }x{n }):")
-            print ("Use 'inf' or -1 for no direct path")
-
-            dist_matrix =[]
-            for i in range (n ):
-                row =[]
-                for j in range (n ):
-                    if i ==j :
-                        row .append (0 if problem_type ==1 else INF )
-                    else :
-                        val =input (f"  Distance from {node_names [i ]} to {node_names [j ]}: ").strip ()
-                        if val .lower ()=='inf'or val =='-1':
-                            row .append (INF )
-                        else :
-                            row .append (float (val ))
-                dist_matrix .append (row )
-
-        elif choice ==2 :
-            print ("\nLoading distance matrix from 'problem.txt'...")
-            dist_matrix =parse_distance_matrix ('problem.txt')
-            if dist_matrix is None :
-                print ("Failed to load distance matrix from file.")
-                print ("\nExpected format:")
-                print ("  Space-separated square matrix")
-                print ("  Use 'inf' or '-1' for no direct path")
-                print ("\nExample:")
-                print ("  0 10 15 20")
-                print ("  10 0 35 25")
-                print ("  15 35 0 30")
-                print ("  20 25 30 0")
-                return 
-
-            n =len (dist_matrix )
-            print (f"\nLoaded {n }x{n } distance matrix")
-
-            node_names =[]
-            for i in range (n ):
-                name =input (f"  Node {i +1 } name (or press Enter): ").strip ()
-                node_names .append (name if name else str (i +1 ))
-
-        else :
-            print ("Invalid choice.")
-            return 
-
-        if problem_type ==1 :
-            print ("\nSelect starting node:")
-            for i ,name in enumerate (node_names ):
-                print (f"{i +1 }. {name }")
-            start_idx =get_int_input (f"\nEnter choice (1-{len (node_names )}): ")-1 
-
-            print ("\nSelect destination node:")
-            for i ,name in enumerate (node_names ):
-                if i !=start_idx :
-                    print (f"{i +1 }. {name }")
-            end_idx =get_int_input (f"\nEnter choice (1-{len (node_names )}): ")-1 
-
-            if start_idx <0 or start_idx >=n or end_idx <0 or end_idx >=n :
-                print ("Invalid node selection.")
-                return 
-
-            input ("\nPress Enter to find shortest path...")
-            dijkstra_shortest_path (dist_matrix ,start_idx ,end_idx ,node_names )
-
-        elif problem_type ==2 :
-            print ("\nSelect starting node:")
-            for i ,name in enumerate (node_names ):
-                print (f"{i +1 }. {name }")
-            start_idx =get_int_input (f"\nEnter choice (1-{len (node_names )}): ")-1 
-
-            if start_idx <0 or start_idx >=n :
-                print ("Invalid node selection.")
-                return 
-
-            print (f"\nSolving TSP starting from {node_names [start_idx ]}...")
-            print ("(Visit all nodes and return to start)")
-
-            input ("\nPress Enter to solve...")
-            solve_tsp_branch_and_bound (dist_matrix ,node_names )
-
-    elif problem_type ==3 :
-
-        print ("\nInput method:")
-        print ("1. Manual Input")
-        print ("2. Load from File (problem.txt)")
-
-        choice =get_int_input ("\nEnter choice (1-2): ")
-
-        if choice ==1 :
-            rows =get_int_input ("Enter number of rows: ")
-            cols =get_int_input ("Enter number of columns: ")
-
-            print (f"\nEnter the {rows }x{cols } grid:")
-            grid =[]
-            for i in range (rows ):
-                row =[]
-                for j in range (cols ):
-                    val =get_int_input (f"  grid[{i }][{j }]: ")
-                    row .append (val )
-                grid .append (row )
-
-        elif choice ==2 :
-            print ("\nLoading grid from 'problem.txt'...")
-            try :
-                with open ('problem.txt','r',encoding ='utf-8-sig')as f :
-                    lines =f .readlines ()
-                grid =[]
-                for line in lines :
-                    row =[int (x )for x in line .strip ().split ()]
-                    grid .append (row )
-
-                if not grid :
-                    print ("Error: File is empty")
-                    return 
-
-                rows =len (grid )
-                cols =len (grid [0 ])
-                if any (len (row )!=cols for row in grid ):
-                    print ("Error: All rows must have same length")
-                    return 
-
-                print (f"\nLoaded {rows }x{cols } grid")
-                print ("Grid:")
-                for row in grid :
-                    print (f"  {row }")
-
-            except FileNotFoundError :
-                print ("Error: File 'problem.txt' not found")
-                return 
-            except ValueError :
-                print ("Error: Invalid grid format")
-                return 
-            except Exception as e :
-                print (f"Error reading file: {e }")
-                return 
-
-        else :
-            print ("Invalid choice.")
-            return 
-
-        input ("\nPress Enter to solve...")
-        solve_min_cost_path (grid )
+    elif choice ==3 :
+        print ("\nUsing 4x4 example:")
+        grid =[
+        [1 ,3 ,5 ,8 ],
+        [4 ,2 ,1 ,7 ],
+        [4 ,3 ,2 ,3 ],
+        [5 ,6 ,1 ,2 ]
+        ]
+        print ("Grid:")
+        for row in grid :
+            print (f"  {row }")
 
     else :
         print ("Invalid choice.")
-        return
+        return 
+
+    input ("\nPress Enter to solve...")
+    solve_min_cost_path (grid )
 
 def main ():
 
@@ -6364,8 +6016,8 @@ def main ():
         print ("\n--- INTEGER & COMBINATORIAL ---")
         print ("11. Integer Linear Programming (Branch & Bound)")
         print ("12. Travelling Salesman Problem (TSP)")
-        print ("13. Knapsack Problem (0/1 & Unbounded)")
-        print ("14. Shortest Path Problems (Dijkstra/Grid)")
+        print ("13. Knapsack Problem (0/1 & Fractional)")
+        print ("14. Minimum Cost Path (Recursive)")
 
         print ("\n--- EXIT ---")
         print ("15. Exit")

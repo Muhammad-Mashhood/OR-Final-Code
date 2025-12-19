@@ -1,0 +1,330 @@
+================================================================================
+SENSITIVITY ANALYSIS - CASE 2: CHANGES IN RHS (RESOURCES/CONSTRAINTS)
+================================================================================
+
+OVERVIEW:
+---------
+Case 2 sensitivity analysis examines what happens when the right-hand side (RHS)
+values of constraints change. These RHS values represent resource availability
+or requirement levels.
+
+When a resource value b_i changes:
+- The basis remains the same
+- The values of basic variables (X_B) change
+- We need to check if the new solution remains feasible (all X_B >= 0)
+- If infeasible, apply dual simplex to restore feasibility
+
+================================================================================
+KEY CONCEPTS:
+================================================================================
+
+1. BASIS INVERSE MATRIX (B^-1):
+   - B is the matrix formed by columns of basic variables
+   - B^-1 is pre-computed in the simplex tableau
+   - Found in the columns of slack/surplus variables
+   - Used to calculate: X_B = B^-1 * b
+
+2. FEASIBILITY vs OPTIMALITY:
+   - When RHS changes: optimality conditions (Zj-Cj >= 0) remain satisfied
+   - But feasibility may be violated (some X_B may become negative)
+   - Need to restore feasibility using dual simplex if needed
+
+3. SHADOW PRICE:
+   - Marginal value of a resource
+   - Shows how much Z changes per unit increase in resource
+   - For Max problems: shadow price = Zj of slack variable
+   - For Min problems: shadow price = -Zj of slack variable
+   - Zero shadow price means resource is not fully utilized (non-binding)
+
+4. FEASIBILITY RANGE:
+   - Range of b_i values where solution remains feasible
+   - Calculated using: X_B(new) = X_B(old) + Δ * B^-1[:, i]
+   - For feasibility: all X_B(new) >= 0
+
+================================================================================
+MATHEMATICAL FORMULATION:
+================================================================================
+
+Given optimal solution with basis B and X_B = B^-1 * b
+
+When b_i changes to b_i + Δ:
+
+1. NEW SOLUTION:
+   X_B(new) = B^-1 * b(new)
+   
+   Since only i-th component changes:
+   X_B(new)[j] = X_B(old)[j] + Δ * B^-1[j][i]
+
+2. FEASIBILITY CONDITION:
+   For all j: X_B(new)[j] >= 0
+   
+   X_B(old)[j] + Δ * B^-1[j][i] >= 0
+   
+   If B^-1[j][i] > 0: Δ >= -X_B(old)[j] / B^-1[j][i]
+   If B^-1[j][i] < 0: Δ <= -X_B(old)[j] / B^-1[j][i]
+   If B^-1[j][i] = 0: Always satisfied (if X_B(old)[j] >= 0)
+
+3. SHADOW PRICE:
+   For Max problem:
+     Shadow price of resource i = Zj of s_i (slack of constraint i)
+   
+   For Min problem:
+     Shadow price of resource i = -Zj of s_i
+   
+   If s_i is basic (non-zero): shadow price = 0 (non-binding constraint)
+   If s_i is non-basic (zero): shadow price from Zj calculation
+
+================================================================================
+IMPLEMENTATION FEATURES:
+================================================================================
+
+1. CHANGE RESOURCE VALUE:
+   ✓ Input: resource index and new value
+   ✓ Calculate B^-1 from tableau
+   ✓ Compute new X_B using B^-1
+   ✓ Display updated tableau with B^-1
+   ✓ Check feasibility of new solution
+   ✓ If feasible: show new objective value
+   ✓ If infeasible: apply dual simplex method
+
+2. FIND FEASIBILITY RANGE:
+   ✓ Input: resource index
+   ✓ Display current resource value
+   ✓ Calculate B^-1
+   ✓ For each basic variable, derive constraint on Δ
+   ✓ Combine constraints to find allowable range
+   ✓ Display range in terms of both Δ and absolute b_i values
+
+3. FIND SHADOW PRICE:
+   ✓ Input: resource index
+   ✓ Check if resource is binding (slack = 0)
+   ✓ If non-binding: shadow price = 0
+   ✓ If binding: calculate from Zj of slack variable
+   ✓ Adjust for Max vs Min problem
+   ✓ Provide interpretation
+
+4. ERROR HANDLING:
+   ✓ Validate resource index (1 to m)
+   ✓ Handle singular basis matrix
+   ✓ Check for infeasibility in dual simplex
+   ✓ Provide meaningful error messages
+
+================================================================================
+USAGE WORKFLOW:
+================================================================================
+
+SCENARIO 1: Resource value changed, solution remains feasible
+---------------------------------------------------------
+1. User selects "Change a resource value"
+2. System asks for resource number (1 to m)
+3. System displays current value
+4. User enters new value
+5. System calculates B^-1 and displays it
+6. System computes new X_B
+7. System displays updated tableau
+8. System checks feasibility -> All X_B >= 0
+9. System displays new objective value
+10. Solution is optimal and feasible!
+
+SCENARIO 2: Resource value changed, solution becomes infeasible
+---------------------------------------------------------
+1. User selects "Change a resource value"
+2. System asks for resource number (1 to m)
+3. System displays current value
+4. User enters new value
+5. System calculates B^-1 and displays it
+6. System computes new X_B
+7. System displays updated tableau
+8. System checks feasibility -> Some X_B < 0
+9. System identifies negative variables
+10. System applies DUAL SIMPLEX METHOD:
+    a. Select most negative X_B (leaving variable)
+    b. Find entering variable using dual ratio test
+    c. Perform pivot operation
+    d. Repeat until all X_B >= 0
+11. Display final feasible optimal solution
+
+SCENARIO 3: Find feasibility range
+---------------------------------------------------------
+1. User selects "Find feasibility range for a resource"
+2. System asks for resource number (1 to m)
+3. System displays current value: b_i
+4. System calculates B^-1 and displays it
+5. For each basic variable X_B[j]:
+   - Display constraint equation: X_B[j] + Δ*B^-1[j][i] >= 0
+   - Calculate bound on Δ
+6. System combines all constraints
+7. System displays:
+   - Range in terms of Δ: Δ_min <= Δ <= Δ_max
+   - Range in terms of b_i: b_i_min <= b_i <= b_i_max
+
+SCENARIO 4: Find shadow price
+---------------------------------------------------------
+1. User selects "Find shadow price of a resource"
+2. System asks for resource number (1 to m)
+3. System finds slack variable s_i
+4. System checks if s_i is basic:
+   - If YES (s_i > 0): Resource is non-binding, shadow price = 0
+   - If NO (s_i = 0): Resource is binding, calculate shadow price
+5. System calculates Zj for s_i column
+6. System adjusts for Max vs Min problem
+7. System displays shadow price with interpretation
+
+================================================================================
+EXAMPLE: STEP-BY-STEP CASE 2 ANALYSIS
+================================================================================
+
+Problem:
+Max Z = 3x1 + 5x2
+s.t.  x1 <= 4         (Resource 1)
+      2x2 <= 12       (Resource 2)
+      3x1 + 2x2 <= 18 (Resource 3)
+      x1, x2 >= 0
+
+Optimal Solution:
+x1 = 2, x2 = 6, Z = 36
+Basic: x1, x2, s1
+Non-basic: s2, s3
+
+Tableau (optimal):
+     x1   x2   s1   s2   s3  | RHS
+s1    0    0    1    a    b  | 2
+x2    0    1    0    c    d  | 6
+x1    1    0    0    e    f  | 2
+----------------------------------
+Zj    3    5    0    g    h  | 36
+
+ANALYSIS 1: Change b2 from 12 to 14 (Δ = +2)
+------------------------------------------------
+1. Resource 2 is constraint: 2x2 <= 12
+2. Current optimal: x2 = 6, s2 = 0 (binding)
+3. Calculate B^-1 (from s1, s2, s3 columns or basis matrix)
+4. New X_B = X_B_old + Δ * B^-1[:, 1]
+5. Check if all new X_B >= 0
+6. If yes: new solution is feasible
+7. New Z = 36 + shadow_price * Δ
+
+ANALYSIS 2: Find range for b3 = 18
+------------------------------------------------
+1. Current: b3 = 18
+2. Let b3 = 18 + Δ
+3. For each basic variable:
+   s1: 2 + Δ*B^-1[0][2] >= 0  -> constraint on Δ
+   x2: 6 + Δ*B^-1[1][2] >= 0  -> constraint on Δ
+   x1: 2 + Δ*B^-1[2][2] >= 0  -> constraint on Δ
+4. Combine: Δ_min <= Δ <= Δ_max
+5. Range: 18 + Δ_min <= b3 <= 18 + Δ_max
+
+ANALYSIS 3: Shadow prices
+------------------------------------------------
+Resource 1: s1 = 2 (basic) -> Shadow price = 0 (non-binding)
+Resource 2: s2 = 0 (non-basic) -> Shadow price = Zj(s2) = g
+Resource 3: s3 = 0 (non-basic) -> Shadow price = Zj(s3) = h
+
+Interpretation:
+- Increasing b1 by 1 unit: Z increases by 0 (no effect)
+- Increasing b2 by 1 unit: Z increases by g
+- Increasing b3 by 1 unit: Z increases by h
+
+================================================================================
+FILE INPUT/OUTPUT:
+================================================================================
+
+The implementation supports both manual input and file reading.
+
+FILE FORMAT (same as Case 1):
+max                    # or min
+2                      # number of variables
+3                      # number of constraints
+3 5                    # objective coefficients
+1 0 4 1               # constraint 1: coefficients, RHS, type (1=<=, 2==, 3=>=)
+0 2 12 1              # constraint 2
+3 2 18 1              # constraint 3
+
+After loading and solving:
+1. System finds optimal solution
+2. User can perform Case 2 analysis
+3. All RHS modifications are interactive
+
+================================================================================
+EDGE CASES HANDLED:
+================================================================================
+
+1. SINGULAR BASIS MATRIX:
+   - If B^-1 cannot be calculated
+   - Display error message
+   - Return to menu
+
+2. INVALID RESOURCE INDEX:
+   - User enters resource number outside 1 to m
+   - Display error message
+   - Prompt again
+
+3. INFEASIBLE AFTER RHS CHANGE:
+   - Some X_B become negative
+   - Automatically apply dual simplex
+   - Continue until feasibility restored
+   - If dual simplex fails: problem truly infeasible
+
+4. UNBOUNDED RANGE:
+   - If Δ can be any value (no constraint from some variable)
+   - Display "All real numbers" or "No upper/lower bound"
+
+5. ZERO COEFFICIENTS IN B^-1:
+   - Variable value doesn't depend on that resource
+   - No constraint from that variable
+   - Display "Always satisfied"
+
+6. NON-BINDING CONSTRAINTS:
+   - Slack > 0
+   - Shadow price automatically = 0
+   - Range can be quite large
+
+================================================================================
+TESTING RECOMMENDATIONS:
+================================================================================
+
+1. TEST WITH KNOWN EXAMPLES:
+   - Use textbook problems with known shadow prices
+   - Verify ranges match analytical calculations
+   - Check dual simplex restoration works
+
+2. TEST EDGE CASES:
+   - Change resource to make solution infeasible
+   - Try resources that are non-binding
+   - Test with all resources (find all ranges)
+
+3. TEST FILE INPUT:
+   - Load problem from test_case2_sensitivity.txt
+   - Solve to optimality
+   - Perform all Case 2 operations
+   - Verify results match expected values
+
+4. TEST INTEGRATION:
+   - After Case 2 changes, can still do Case 1 analysis?
+   - Multiple successive resource changes
+   - Switch between finding ranges and changing values
+
+================================================================================
+COMPARISON: CASE 1 vs CASE 2
+================================================================================
+
+CASE 1 (Objective Coefficients):
+- Changes affect optimality
+- Basis may change
+- Use regular simplex to restore optimality
+- Range where solution remains optimal
+
+CASE 2 (RHS Values):
+- Changes affect feasibility
+- Optimality maintained (Zj-Cj still >= 0)
+- Use dual simplex to restore feasibility
+- Range where solution remains feasible
+
+Both cases:
+- Require optimal starting solution
+- Calculate ranges
+- Allow specific value changes
+- Update tableau and continue solving if needed
+
+================================================================================

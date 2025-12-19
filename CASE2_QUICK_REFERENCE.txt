@@ -1,0 +1,294 @@
+================================================================================
+QUICK REFERENCE: SENSITIVITY ANALYSIS CASE 2
+================================================================================
+
+WHAT IS CASE 2?
+---------------
+Analysis of changes in RHS (Right-Hand Side) values, i.e., resource availability
+or constraint limits (the b values in: Ax <= b, Ax >= b, or Ax = b)
+
+WHEN TO USE:
+------------
+✓ "What if we have 50 hours instead of 40?"
+✓ "How much can material supply vary while staying feasible?"
+✓ "What's the value of one more unit of resource?"
+✓ "Which constraint is most limiting?"
+
+KEY DIFFERENCE FROM CASE 1:
+---------------------------
+CASE 1: Changes objective coefficients (c) -> affects OPTIMALITY
+CASE 2: Changes RHS values (b) -> affects FEASIBILITY
+
+================================================================================
+MAIN OPERATIONS:
+================================================================================
+
+1. CHANGE RESOURCE VALUE
+   ========================
+   What it does: Updates b_i to a new value
+   
+   Formula: X_B(new) = X_B(old) + Δ * B^-1[:, i]
+   where Δ = b_i(new) - b_i(old)
+   
+   If feasible: Done! New solution is optimal and feasible
+   If infeasible: Apply dual simplex to restore feasibility
+   
+   Example: Change b2 from 12 to 15
+   
+
+2. FIND FEASIBILITY RANGE
+   ========================
+   What it does: Finds range of b_i where solution stays feasible
+   
+   For each basic variable X_B[j]:
+   - X_B[j] + Δ * B^-1[j][i] >= 0
+   - Solve for Δ
+   
+   Result: b_min <= b_i <= b_max
+   
+   Example: Resource 3 can vary from 15 to 25
+   
+
+3. FIND SHADOW PRICE
+   ===================
+   What it does: Finds marginal value of resource
+   
+   Definition: Rate of change in Z per unit change in b_i
+   
+   Calculation:
+   - For Max: Shadow price = Zj of slack_i
+   - For Min: Shadow price = -Zj of slack_i
+   - If slack > 0: Shadow price = 0 (non-binding)
+   
+   Example: Shadow price = 2.5 means each additional unit
+            of that resource increases Z by 2.5
+
+================================================================================
+STEP-BY-STEP USAGE:
+================================================================================
+
+STARTING:
+---------
+1. Load or input problem
+2. Solve to optimality
+3. Select "10. Sensitivity Analysis"
+4. Select "2. Change in RHS"
+
+OPTION 1: Change a resource value
+----------------------------------
+Enter: 1
+System asks: Which resource (1-m)?
+Enter: 2 (for example)
+System shows: Current value: b2 = 12
+Enter: 15 (new value)
+System shows:
+  - B^-1 matrix
+  - Calculation of new X_B
+  - Updated tableau
+  - Feasibility check
+  - If feasible: New Z value
+  - If infeasible: Dual simplex iterations
+
+OPTION 2: Find feasibility range
+---------------------------------
+Enter: 2
+System asks: Which resource (1-m)?
+Enter: 3 (for example)
+System shows:
+  - Current value: b3 = 18
+  - B^-1 matrix
+  - Constraint for each basic variable
+  - Combined range: 15 <= b3 <= 24
+
+OPTION 3: Find shadow price
+----------------------------
+Enter: 3
+System asks: Which resource (1-m)?
+Enter: 2 (for example)
+System shows:
+  - Whether resource is binding
+  - Shadow price calculation
+  - Shadow price value: 2.5
+  - Interpretation
+
+OPTION 4: Find all ranges
+--------------------------
+Enter: 4
+System shows ranges for all resources, one at a time
+Press Enter between each
+
+OPTION 5: Find all shadow prices
+---------------------------------
+Enter: 5
+System shows shadow prices for all resources, one at a time
+Press Enter between each
+
+OPTION 6: Back to main menu
+----------------------------
+Enter: 6
+Returns to Case 1/Case 2 selection
+
+================================================================================
+INTERPRETING RESULTS:
+================================================================================
+
+FEASIBILITY RANGE:
+------------------
+15 <= b2 <= 20  means:
+  - If b2 < 15: Solution becomes infeasible (need dual simplex)
+  - If 15 <= b2 <= 20: Solution stays feasible, same basis
+  - If b2 > 20: Solution becomes infeasible (need dual simplex)
+
+SHADOW PRICE:
+-------------
+Shadow price = 0:
+  → Resource not fully utilized (has slack)
+  → Not a bottleneck
+  → Increasing it won't help
+
+Shadow price = 3.5 (Max problem):
+  → Resource is binding (fully used)
+  → Each additional unit increases Z by 3.5
+  → Valuable resource, consider getting more
+
+Shadow price = -2.0 (Min problem):
+  → Each additional unit decreases Z by 2.0
+  → (For minimization, decrease is good!)
+
+NEW OBJECTIVE VALUE:
+--------------------
+After changing b_i from 12 to 15 (Δ = +3):
+New Z = Old Z + (Shadow Price × Δ)
+New Z = 36 + (2.5 × 3) = 43.5
+
+(Only valid within feasibility range!)
+
+================================================================================
+COMMON SCENARIOS:
+================================================================================
+
+SCENARIO: Increase production capacity
+---------------------------------------
+Question: "We can increase machine hours from 40 to 50. Should we?"
+Action: Find shadow price of machine hours constraint
+If shadow price > 0: Yes! Z will increase
+Calculate: ΔZ = shadow_price × 10
+
+SCENARIO: Resource constraint relaxation
+-----------------------------------------
+Question: "Which constraint should we relax to get most improvement?"
+Action: Find shadow prices for all constraints
+Result: Highest shadow price = most valuable constraint
+
+SCENARIO: Multiple resource changes
+------------------------------------
+Question: "What if we change both b1 and b2?"
+Action: 
+1. Change b1, note new solution
+2. From new solution, change b2
+Or: Use separate analysis for each (approximate)
+
+SCENARIO: Verify change is feasible
+------------------------------------
+Question: "Can we reduce b3 from 18 to 12?"
+Action: Find feasibility range for b3
+If 12 is within range: Yes, use formula for new X_B
+If 12 is outside range: Need dual simplex
+
+================================================================================
+FORMULAS QUICK REFERENCE:
+================================================================================
+
+B^-1 Calculation:
+  Extract from slack variable columns in tableau
+  Or calculate directly from basis matrix B
+
+New Solution after RHS change:
+  X_B(new) = X_B(old) + Δ × B^-1[:, i]
+  where i is the changed resource index
+
+Feasibility Condition:
+  All X_B(new)[j] >= 0
+
+Range Bounds:
+  For each j:
+    If B^-1[j][i] > 0: Δ >= -X_B[j] / B^-1[j][i]
+    If B^-1[j][i] < 0: Δ <= -X_B[j] / B^-1[j][i]
+    If B^-1[j][i] = 0: No constraint
+
+Shadow Price:
+  Max problem: π_i = Zj of slack_i
+  Min problem: π_i = -Zj of slack_i
+  If slack_i > 0: π_i = 0
+
+New Objective Value:
+  Z(new) = Z(old) + π_i × Δ
+  (Valid only within feasibility range)
+
+================================================================================
+TROUBLESHOOTING:
+================================================================================
+
+"Error: Could not calculate B inverse"
+→ Basis matrix is singular (very rare)
+→ Check if optimal solution is correct
+→ Try different problem
+
+"INFEASIBLE SOLUTION - NO ENTERING VARIABLE!"
+→ Problem truly has no feasible solution after change
+→ The RHS change was too drastic
+→ Try smaller change or revert to original
+
+"Invalid resource choice"
+→ Entered number outside 1 to m
+→ Re-enter valid resource number
+
+"Resource index out of range"
+→ Internal error in indexing
+→ Check m = number of constraints
+
+Shadow price shows 0 but resource seems binding:
+→ Check if slack variable is actually > 0
+→ Very small slack (< 1e-9) treated as 0
+→ Review optimal solution carefully
+
+Dual simplex takes many iterations:
+→ Normal for large changes in RHS
+→ Each iteration improves feasibility
+→ Wait for completion
+
+================================================================================
+EXAM TIPS:
+================================================================================
+
+✓ Always check if solution is optimal before Case 2 analysis
+✓ B^-1 is shown in the tableau (slack/surplus columns)
+✓ Shadow price = 0 for any non-binding constraint
+✓ Shadow price valid only within feasibility range
+✓ For hand calculation: use B^-1 formula
+✓ Show all steps: Δ calculation, new X_B, feasibility check
+✓ If infeasible, mention "apply dual simplex" (don't need to fully solve)
+✓ Interpret results in context of problem
+
+================================================================================
+FILE FORMAT FOR TESTING:
+================================================================================
+
+Create file: my_problem.txt
+
+max
+2
+3
+3 5
+1 0 4 1
+0 2 12 1
+3 2 18 1
+
+Run program:
+1. Select "10. Sensitivity Analysis"
+2. Select "2. Load from File"
+3. Enter filename: my_problem.txt
+4. Program solves automatically
+5. Ready for Case 2 analysis!
+
+================================================================================

@@ -1,0 +1,60 @@
+# SENSITIVITY ANALYSIS - CASE 2: RHS CHANGES
+# Test file for resource/RHS value changes
+
+# Example Problem (from textbook)
+# Max Z = 3x1 + 5x2
+# Subject to:
+#   x1 <= 4
+#   2x2 <= 12
+#   3x1 + 2x2 <= 18
+#   x1, x2 >= 0
+
+max
+2
+3
+3 5
+1 0 4 1
+0 2 12 1
+3 2 18 1
+
+# Expected Optimal Solution:
+# x1 = 2, x2 = 6, Z = 36
+# s1 = 2 (resource 1 not binding)
+# s2 = 0 (resource 2 binding)
+# s3 = 0 (resource 3 binding)
+
+# CASE 2 ANALYSIS:
+# 
+# 1. Resource 1 (b1 = 4):
+#    - Not binding (s1 = 2)
+#    - Shadow price = 0
+#    - Can change within range without affecting solution
+#
+# 2. Resource 2 (b2 = 12):
+#    - Binding (s2 = 0)
+#    - Shadow price > 0 (valuable resource)
+#    - Changes will affect optimal value
+#
+# 3. Resource 3 (b3 = 18):
+#    - Binding (s3 = 0)
+#    - Shadow price > 0 (valuable resource)
+#    - Changes will affect optimal value
+
+# TEST SCENARIOS:
+#
+# A. Change b2 from 12 to 14:
+#    - Resource 2 is binding
+#    - Should recalculate X_B using B^-1
+#    - Check if new solution is feasible
+#    - If feasible: update table and show new Z
+#    - If infeasible: apply dual simplex
+#
+# B. Find feasibility range for b3:
+#    - Calculate B^-1
+#    - For each basic variable: X_B + Δ * B^-1[i][3] >= 0
+#    - Find range where all constraints satisfied
+#
+# C. Find shadow prices:
+#    - For resource 1: should be 0 (not binding)
+#    - For resource 2 and 3: should be positive
+#    - Shadow price = Zj of corresponding slack variable

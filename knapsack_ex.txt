@@ -1,0 +1,6 @@
+50
+10 60 Watch
+20 100 Laptop
+30 120 Camera
+5 30 Phone
+15 80 Tablet
