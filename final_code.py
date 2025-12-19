@@ -910,22 +910,7 @@ def solve_dual_simplex (problem ,var_prefix ='x'):
     print ("#"*80 )
 
     print ("\n"+"="*80 )
-    print ("DUAL SIMPLEX METHOD - EXPLANATION")
-    print ("="*80 )
-    print ("\nWhen to use Dual Simplex:")
-    print ("  • Problem is in canonical form with optimal indicators (Zj-Cj >= 0)")
-    print ("  • But solution is infeasible (some RHS values < 0)")
-    print ("  • Common after converting >= constraints by multiplying by -1")
-    print ()
-    print ("Algorithm:")
-    print ("  1. Check if all RHS >= 0:")
-    print ("     - If YES: Optimal solution found")
-    print ("     - If NO: Select most negative RHS (leaving variable)")
-    print ("  2. From leaving row, find entering variable:")
-    print ("     - Consider only negative elements in the row")
-    print ("     - Choose minimum |Zj-Cj / element|")
-    print ("  3. Perform pivot operation")
-    print ("  4. Repeat until all RHS >= 0")
+  
     print ("="*80 )
 
     input ("\nPress Enter to start solving...")
@@ -1319,14 +1304,14 @@ def solve_simplex_matrix_method (problem ):
         print ("\nb (RHS vector):")
         print_vector (b )
 
-        print ("\nXb = B^-1 x b (Basic variable values):")
+        print ("\nXb :")
         print_vector (Xb )
 
-        print ("\nCb (Objective coefficients of basic variables):")
+        print ("\nCb :")
         print_vector (Cb )
 
         print ("\nREDUCED COSTS FOR NON-BASIC VARIABLES:")
-        print ("Formula: Zj - Cj = (Cb x B^-1 x Aj) - Cj")
+        print ("Zj - Cj: ")
         print ()
 
         zj_cj =[]
@@ -1389,7 +1374,7 @@ def solve_simplex_matrix_method (problem ):
         print_vector (d )
 
         print ("\nMINIMUM RATIO TEST:")
-        print ("Formula: theta = min{ Xb[i] / d[i] : d[i] > 0 }")
+     
         print ()
 
         min_ratio =float ('inf')
@@ -5133,9 +5118,8 @@ def ilp_menu ():
     print ("\nInput method:")
     print ("1. Manual Input")
     print ("2. Load from File (problem.txt)")
-    print ("3. Use Example Problem")
 
-    choice =get_int_input ("\nEnter choice (1-3): ")
+    choice =get_int_input ("\nEnter choice (1-2): ")
 
     if choice ==1 :
         problem =input_problem ()
@@ -5144,24 +5128,6 @@ def ilp_menu ():
         if problem is None :
             print ("Failed to load problem from file.")
             return 
-    elif choice ==3 :
-        print ("\nUsing example problem:")
-        print ("Maximize Z = 8x1 + 5x2")
-        print ("Subject to:")
-        print ("  x1 + x2 <= 6")
-        print ("  9x1 + 5x2 <= 45")
-        print ("  x1, x2 >= 0 and INTEGER")
-
-        problem ={
-        'is_max':True ,
-        'num_vars':2 ,
-        'num_constraints':2 ,
-        'obj_coef':[8 ,5 ],
-        'objective':[8 ,5 ],
-        'constraints':[[1 ,1 ],[9 ,5 ]],
-        'rhs':[6 ,45 ],
-        'constraint_types':[1 ,1 ]
-        }
     else :
         print ("Invalid choice.")
         return 
@@ -6213,11 +6179,7 @@ def min_cost_path_menu ():
                 print ("\nExpected format:")
                 print ("  Space-separated square matrix")
                 print ("  Use 'inf' or '-1' for no direct path")
-                print ("\nExample:")
-                print ("  0 10 15 20")
-                print ("  10 0 35 25")
-                print ("  15 35 0 30")
-                print ("  20 25 30 0")
+            
                 return 
 
             n =len (dist_matrix )
