@@ -3236,14 +3236,7 @@ def find_shadow_price_via_dual (problem ,table ,basic_vars ,var_names ,cj ,cb ,r
     if resource_index >=m :
         print (f"\n[!] Error: Constraint index {resource_index +1 } is out of range (1-{m })")
         return None 
-
-    print ("\n"+"-"*80 )
-    print ("SHADOW PRICE INTERPRETATION:")
-    print ("-"*80 )
-    print ("The shadow price (dual price) represents the rate of change in the")
-    print ("objective function value per unit increase in the resource.")
-    print ("Shadow Price = Value of corresponding dual variable at optimum")
-    print ("-"*80 )
+ 
 
     print (f"\n{'='*80 }")
     print ("STEP 1: PRIMAL PROBLEM")
@@ -3787,8 +3780,8 @@ def sensitivity_case3_change_basic_column (problem ,table ,basic_vars ,var_names
     print (f"\n{'='*80 }")
     print ("STEP 3: RECALCULATE ENTIRE TABLEAU")
     print ('='*80 )
-    print ("\nUsing formula: Tableau column j = B^-1 × A_j")
-    print ("             RHS (X_B) = B^-1 × b")
+    print ("\nUsing formula: Tableau column j :")
+    print ("             RHS (X_B): ")
 
     new_table =[[0.0 for _ in range (n +1 )]for _ in range (m )]
 
@@ -6095,7 +6088,6 @@ def ilp_menu ():
 
 def solve_tsp_branch_and_bound (dist_matrix ,city_names =None, silent=False ):
 
-    # Branch-and-bound implementation (restored, step-by-step)
     import copy
     n = len(dist_matrix)
     INF = float('inf')
@@ -6107,7 +6099,6 @@ def solve_tsp_branch_and_bound (dist_matrix ,city_names =None, silent=False ):
         if not silent_mode:
             print(*args, **kwargs)
     silent_mode = False
-    # Support silent mode for verification
     if 'silent' in locals() or 'silent' in globals():
         silent_mode = locals().get('silent', False)
     def branch_and_bound():
@@ -6138,7 +6129,7 @@ def solve_tsp_branch_and_bound (dist_matrix ,city_names =None, silent=False ):
                     dfs(path+[v], visited|{v}, next_cost)
         dfs([0], {0}, 0.0)
         return best_tour, best_cost
-    # Print matrix and info
+
     _print("\n"+"#"*80)
     _print("   TRAVELLING SALESMAN PROBLEM - BRANCH AND BOUND")
     _print("#"*80)
@@ -6370,7 +6361,7 @@ def tsp_menu ():
             print ("\nExpected format:")
             print ("  Space-separated square matrix")
             print ("  Use 'inf' or '-1' for no direct path")
-            print ("\nExample:")
+            print ("\neg:")
             print ("  inf 10 15 20")
             print ("  10 inf 35 25")
             print ("  15 35 inf 30")
@@ -6441,14 +6432,7 @@ def solve_01_knapsack (weights ,values ,capacity ,item_names =None ):
     print ("\n"+"="*80 )
     print ("DYNAMIC PROGRAMMING APPROACH")
     print ("="*80 )
-    print ("\nRecurrence Relation:")
-    print ("  V[i][w] = max(V[i-1][w], V[i-1][w-wi] + vi)  if wi <= w")
-    print ("  V[i][w] = V[i-1][w]                          if wi > w")
-    print ("\nWhere:")
-    print ("  V[i][w] = max value using items 1..i with capacity w")
-    print ("  wi = weight of item i")
-    print ("  vi = value of item i")
-
+ 
     V =[[0 for _ in range (capacity +1 )]for _ in range (n +1 )]
 
     print ("\n"+"="*80 )
@@ -6571,11 +6555,6 @@ def solve_unbounded_knapsack (weights ,values ,capacity ,item_names =None ):
     print ("\n"+"="*80 )
     print ("DYNAMIC PROGRAMMING APPROACH")
     print ("="*80 )
-    print ("\nRecurrence Relation:")
-    print ("  V[w] = max(V[w], V[w-wi] + vi) for all items i where wi <= w")
-    print ("\nWhere:")
-    print ("  V[w] = max value achievable with capacity w")
-    print ("  Can use each item unlimited times")
 
     V =[0 ]*(capacity +1 )
     item_used =[[] for _ in range (capacity +1 )]
@@ -6656,13 +6635,7 @@ def solve_bounded_knapsack (weights ,values ,bounds ,capacity ,item_names =None 
     print ("\n"+"="*80 )
     print ("DYNAMIC PROGRAMMING APPROACH")
     print ("="*80 )
-    print ("\nRecurrence Relation:")
-    print ("  V[i][w] = max(V[i-1][w-k*wi] + k*vi) for k = 0 to min(bi, floor(w/wi))")
-    print ("\nWhere:")
-    print ("  V[i][w] = max value using items 1..i with capacity w")
-    print ("  bi = bound (max quantity) for item i")
-    print ("  wi = weight of item i")
-    print ("  vi = value of item i")
+   
 
     V =[[0 for _ in range (capacity +1 )]for _ in range (n +1 )]
     item_qty =[[{} for _ in range (capacity +1 )]for _ in range (n +1 )]
@@ -6868,16 +6841,6 @@ def knapsack_menu ():
             print ("\nExpected format:")
             print ("  Line 1: Capacity")
             print ("  Line 2+: Weight Value [Bound] [ItemName]")
-            print ("\nExample (bounded):")
-            print ("  50")
-            print ("  10 60 3 Item1")
-            print ("  20 100 2 Item2")
-            print ("  30 120 1 Item3")
-            print ("\nExample (0/1 or unbounded):")
-            print ("  50")
-            print ("  10 60 Item1")
-            print ("  20 100 Item2")
-            print ("  30 120 Item3")
             return 
 
         capacity =problem ['capacity']
