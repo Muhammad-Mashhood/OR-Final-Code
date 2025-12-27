@@ -1,0 +1,75 @@
+====================================================================
+TABLE FILE LOADING - QUICK REFERENCE GUIDE
+====================================================================
+
+SIMPLE TABLE FORMAT (RECOMMENDED - Just like your textbook!)
+====================================================================
+
+Just copy your table from textbook/Excel with space-separated values!
+
+FORMAT:
+B.V. x1 x2 x3 ... xN Solution
+Z    c1 c2 c3 ... cN objective_value
+bv1  a11 a12 a13 ... a1N rhs1
+bv2  a21 a22 a23 ... a2N rhs2
+...
+
+EXAMPLE FROM YOUR IMAGE:
+B.V. x1 x2 x3 x4 x5 x6 Solution
+Z 0 40 0 20 0 10 10500
+x1 1 6 0 2 0 -1 150
+x5 0 -7 0 -3 1 1 50
+x3 0 -2 1 -1 0 1 150
+
+Save this to a file (e.g., table.txt) and load it!
+
+====================================================================
+
+HOW TO USE IN THE PROGRAM
+====================================================================
+
+1. Continue from Table (Option 2 in main menu):
+   - Choose "3. Load from File (Simple Table Format)"
+   - Enter filename or press Enter for 'table.txt'
+   - Choose whether to continue solving or use for sensitivity
+
+2. Sensitivity Analysis (Option 8 in main menu):
+   - Choose "5. Load Optimal Table from File (Simple Table Format)"
+   - Enter filename or press Enter for 'table.txt'
+
+====================================================================
+
+TIPS
+====================================================================
+
+✓ First column header: B.V. (or BV, BASIC)
+✓ Last column header: Solution (or b, bi, RHS, Solution(bi))
+✓ First data row MUST be Z (objective function row)
+✓ Use spaces or tabs to separate values
+✓ Negative numbers supported: -1, -0.5, etc.
+✓ Decimals supported: 0.667, -0.333, etc.
+✓ Lines starting with # are comments (ignored)
+
+====================================================================
+
+WHAT THE PROGRAM DOES
+====================================================================
+
+When you load a simple table file:
+1. Reads the header to identify variables (x1, x2, s1, etc.)
+2. Extracts the Z row to get Cj values
+3. Reads constraint rows to build the table
+4. Automatically calculates Cb from basic variables
+5. Displays the table for verification
+6. Asks if you want to continue solving or use for sensitivity
+
+====================================================================
+
+EXAMPLE FILES INCLUDED
+====================================================================
+
+- table.txt - Example from your image
+- table_example.txt - Detailed format example
+- optimal_table_example.txt - Optimal table example
+
+====================================================================

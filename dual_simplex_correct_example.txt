@@ -1,0 +1,34 @@
+================================================================================
+CORRECT DUAL SIMPLEX TABLE FORMAT EXAMPLE
+================================================================================
+
+When you have a table that needs dual simplex, you need to provide:
+1. The Cj values (objective coefficients)
+2. The current tableau rows
+3. The basic variables
+
+The Z row in the file should contain Cj values, NOT Zj-Cj values!
+
+Example: After optimal solution, RHS of constraint 1 changed, causing s1 = -2
+
+Original problem: Maximize Z = 3x1 + 5x2
+Constraints had slack variables s1, s2, s3
+
+Optimal table BEFORE RHS change had:
+- x1 and x2 in basis with Cb values 3 and 5
+- All Zj-Cj >= 0
+
+After RHS change, s1 = -2 (infeasible)
+
+CORRECT table format for problem.txt:
+----------------------------------------
+B.V. x1 x2 s1 s2 s3 Solution
+x2 0 1 1 0 0 4
+x1 1 0 -1 1 0 2  
+s3 0 0 3 0 1 16
+
+Where Cj values are: [3, 5, 0, 0, 0] for variables [x1, x2, s1, s2, s3]
+
+Note: No Z row in the table! The Z row would be calculated.
+
+For manual table input with pre-calculated Z values, a different approach is needed.

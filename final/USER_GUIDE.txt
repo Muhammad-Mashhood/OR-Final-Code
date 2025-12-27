@@ -1,0 +1,651 @@
+====================================================================
+    OPERATIONS RESEARCH EXAM HELPER - USER GUIDE
+====================================================================
+
+TABLE OF CONTENTS
+====================================================================
+1. Introduction
+2. Quick Start Guide
+3. Linear Programming Problems
+4. Assignment Problems (Hungarian Method)
+5. Transportation Problems (MODI Method)
+6. Sensitivity Analysis
+7. Simplex Table Input
+8. Integer Linear Programming
+9. Travelling Salesman Problem (TSP)
+10. Knapsack Problems
+11. Shortest Path Problems
+12. Tips and Troubleshooting
+
+====================================================================
+1. INTRODUCTION
+====================================================================
+
+This program solves various Operations Research problems:
+- Linear Programming (Simplex, Big-M, Dual Simplex)
+- Assignment Problems (Hungarian Method)
+- Transportation Problems (MODI Method)
+- Sensitivity Analysis (Cases 1-5)
+- Integer Linear Programming (Branch & Bound)
+- Travelling Salesman Problem (TSP)
+- Knapsack Problems (0/1 and Unbounded)
+- Shortest Path Problems (Dijkstra)
+
+====================================================================
+2. QUICK START GUIDE
+====================================================================
+
+STEP 1: Run the program
+   python final_code.py
+
+STEP 2: Choose an option from the main menu (1-13)
+
+STEP 3: Prepare your input file (problem.txt) OR enter manually
+
+STEP 4: View the solution!
+
+====================================================================
+3. LINEAR PROGRAMMING PROBLEMS
+====================================================================
+
+MENU OPTIONS:
+- Option 1: Load from File & Auto-Solve
+- Option 2: Continue from Table (Simplex)
+- Option 3: Dual Simplex Method
+- Option 4: Primal to Dual Conversion
+- Option 5: Simplex with Matrix Method
+
+HOW TO CREATE problem.txt FOR LINEAR PROGRAMMING:
+--------------------------------------------------
+
+FORMAT:
+Line 1: max OR min (objective type)
+Line 2: Objective function (can start with "z = " or just the equation)
+Lines 3+: Constraints (one per line)
+
+CONSTRAINT FORMATS:
+- Use <= for less than or equal
+- Use >= for greater than or equal
+- Use = for equality
+- Variables: x1, x2, x3, etc.
+- Can use + or - for coefficients
+- Spaces are optional around operators
+
+EXAMPLE 1: Simple Maximization
+--------------------------------------------------
+max
+z = 3x1 + 5x2
+x1 <= 4
+x2 <= 6
+3x1 + 2x2 <= 18
+
+SOLUTION: Choose Option 1, program auto-detects Simplex method
+
+
+EXAMPLE 2: Minimization Problem
+--------------------------------------------------
+min
+z = 2x1 + 3x2
+x1 + x2 >= 5
+2x1 + x2 >= 8
+x1 >= 0
+x2 >= 0
+
+SOLUTION: Choose Option 1, program uses Big-M method
+
+
+EXAMPLE 3: Mixed Constraints (Requires Big-M)
+--------------------------------------------------
+max
+z = 3x1 + 2x2
+x1 + x2 >= 4
+2x1 + x2 <= 10
+x1 + 2x2 = 8
+
+SOLUTION: Choose Option 1, program auto-detects Big-M method
+
+
+EXAMPLE 4: Dual Simplex Problem
+--------------------------------------------------
+Create a file with infeasible but optimal conditions
+(Typically used when continuing from a table)
+
+Choose Option 3, then input the table manually or from file
+
+====================================================================
+4. ASSIGNMENT PROBLEMS (HUNGARIAN METHOD)
+====================================================================
+
+MENU OPTION: 6
+
+HOW TO CREATE problem.txt FOR ASSIGNMENT:
+--------------------------------------------------
+
+FORMAT:
+Line 1: min OR max
+Lines 2+: Cost matrix (space-separated values)
+
+EXAMPLE 1: 4x4 Assignment (Minimization)
+--------------------------------------------------
+min
+9 11 14 11
+6 15 13 13
+12 13 6 8
+11 9 10 12
+
+What it means:
+- Worker 1 can do Job 1 (cost 9), Job 2 (cost 11), etc.
+- 4 workers, 4 jobs
+- Find minimum cost assignment
+
+
+EXAMPLE 2: 5x5 Assignment (Maximization)
+--------------------------------------------------
+max
+82 83 69 92 77
+77 37 49 92 59
+11 69 5 86 65
+8 9 98 23 45
+92 80 89 78 56
+
+Use this when you want to maximize profit/efficiency
+
+
+EXAMPLE 3: Non-square Matrix (3 workers, 4 jobs)
+--------------------------------------------------
+min
+10 12 9 11
+5 10 7 8
+12 14 13 11
+
+Program automatically handles unbalanced assignment
+
+====================================================================
+5. TRANSPORTATION PROBLEMS (MODI METHOD)
+====================================================================
+
+MENU OPTION: 7
+
+HOW TO CREATE problem.txt FOR TRANSPORTATION:
+--------------------------------------------------
+
+FORMAT:
+Each row: cost1 cost2 cost3 ... costN supply
+Last row: demand1 demand2 demand3 ... demandN
+
+NO KEYWORDS NEEDED - Auto-detected!
+
+EXAMPLE 1: 3 Sources × 4 Destinations
+--------------------------------------------------
+19 30 50 10 7
+70 30 40 60 9
+40 8 70 20 32
+7 9 18 14
+
+Explanation:
+Row 1: Source 1 → D1(19), D2(30), D3(50), D4(10), Supply=7
+Row 2: Source 2 → D1(70), D2(30), D3(40), D4(60), Supply=9
+Row 3: Source 3 → D1(40), D2(8), D3(70), D4(20), Supply=32
+Row 4: Demands are 7, 9, 18, 14
+
+Total Supply = 7+9+32 = 48
+Total Demand = 7+9+18+14 = 48 (Balanced!)
+
+
+EXAMPLE 2: 2 Sources × 3 Destinations (Unbalanced)
+--------------------------------------------------
+4 8 8 76
+16 24 16 82
+72 102 41
+
+Supply: 76, 82 (Total = 158)
+Demand: 72, 102, 41 (Total = 215)
+
+Program will add dummy source to balance
+
+
+EXAMPLE 3: 4 Sources × 3 Destinations
+--------------------------------------------------
+5 1 7 15
+6 4 6 25
+3 2 5 10
+5 8 9 20
+20 30 20
+
+Supply: 15, 25, 10, 20 (Total = 70)
+Demand: 20, 30, 20 (Total = 70)
+
+====================================================================
+6. SENSITIVITY ANALYSIS
+====================================================================
+
+MENU OPTION: 8
+
+You have 5 ways to input:
+
+METHOD 1: Manual Input (Equations)
+--------------------------------------------------
+Enter the LP problem manually in the program
+Program solves it first, then does sensitivity
+
+
+METHOD 2: Load Problem from File
+--------------------------------------------------
+Create problem.txt with LP format (see Section 3)
+Example:
+max
+z = 3x1 + 5x2
+x1 <= 4
+x2 <= 6
+3x1 + 2x2 <= 18
+
+
+METHOD 3: Input Optimal Table Manually
+--------------------------------------------------
+If you already have the optimal table, enter it directly
+Program will ask for:
+- Problem type (max/min)
+- Number of variables
+- Cj values
+- Basic variables
+- Table values
+
+
+METHOD 4: Load Optimal Table (Detailed Format)
+--------------------------------------------------
+Create optimal_table.txt:
+max
+2
+3
+3
+3 5 0 0 0
+x1 x2 s3
+3 5 0
+1 0 0.667 -0.333 0 4
+0 1 -0.333 0.667 0 6
+0 0 0.333 0.167 1 3
+
+
+METHOD 5: Load Optimal Table (Simple Format) - RECOMMENDED!
+--------------------------------------------------
+Create table.txt (like your textbook):
+
+B.V. x1 x2 x3 x4 x5 x6 Solution
+Z 0 40 0 20 0 10 10500
+x1 1 6 0 2 0 -1 150
+x5 0 -7 0 -3 1 1 50
+x3 0 -2 1 -1 0 1 150
+
+This is the easiest! Just copy from your textbook/Excel.
+
+SENSITIVITY ANALYSIS CASES:
+--------------------------------------------------
+After loading, you can analyze:
+
+Case 1: Change in objective function coefficient (Cj)
+   Example: What if c1 changes from 3 to 5?
+
+Case 2: Change in RHS (bi) - Resource availability
+   Example: What if b1 changes from 10 to 15?
+
+Case 3: Adding a new variable
+   Example: Add x4 with coefficient 2 in objective
+
+Case 4: Adding a new constraint
+   Example: Add x1 + 2x2 <= 10
+
+Case 5: Change in constraint coefficient (aij)
+   Example: What if a11 changes from 1 to 2?
+
+====================================================================
+7. SIMPLEX TABLE INPUT
+====================================================================
+
+MENU OPTION: 2 (Continue from Table)
+
+When you have a partially solved simplex table:
+
+METHOD 1: Manual Input
+--------------------------------------------------
+Enter the table interactively
+
+
+METHOD 2: Detailed Format File
+--------------------------------------------------
+Create table.txt:
+max
+2          ← decision variables
+3          ← slack variables
+3          ← constraints
+3 5 0 0 0  ← Cj values
+x2 s2 s3   ← basic variables
+5 0 0      ← Cb values
+0 1 1 0 0 4      ← table row 1
+0 0 -2 1 0 -2    ← table row 2
+1 0 -1.5 0 1 5   ← table row 3
+
+
+METHOD 3: Simple Table Format - EASIEST!
+--------------------------------------------------
+Create table.txt (exactly like textbook):
+
+B.V. x1 x2 s1 s2 s3 Solution
+Z 3 5 0 0 0 30
+x1 1 0 0.667 -0.333 0 4
+x2 0 1 -0.333 0.667 0 6
+s3 0 0 0.333 0.167 1 3
+
+Rules:
+✓ First column: B.V. (or BV, BASIC)
+✓ Last column: Solution (or RHS, b, bi)
+✓ First data row: Z (objective row)
+✓ Space-separated values
+✓ Supports decimals and negatives
+
+====================================================================
+8. INTEGER LINEAR PROGRAMMING
+====================================================================
+
+MENU OPTION: 9
+
+For problems requiring integer solutions using Branch & Bound.
+
+EXAMPLE problem.txt:
+--------------------------------------------------
+max
+z = 5x1 + 8x2
+x1 + x2 <= 6
+5x1 + 9x2 <= 45
+
+Choose Option 9, then select input method.
+
+The program will:
+1. Solve LP relaxation
+2. Branch on fractional variables
+3. Find optimal integer solution
+
+====================================================================
+9. TRAVELLING SALESMAN PROBLEM (TSP)
+====================================================================
+
+MENU OPTION: 10
+
+TSP finds the shortest tour visiting all cities exactly once.
+
+HOW TO CREATE problem.txt FOR TSP:
+--------------------------------------------------
+
+FORMAT:
+Line 1: Number of cities
+Lines 2+: Distance matrix (space-separated)
+
+EXAMPLE 1: 4 Cities
+--------------------------------------------------
+4
+0 10 15 20
+10 0 35 25
+15 35 0 30
+20 25 30 0
+
+Explanation:
+- City 1 to City 2: distance 10
+- City 1 to City 3: distance 15
+- Diagonal is 0 (city to itself)
+- Matrix should be symmetric for undirected graph
+
+
+EXAMPLE 2: 5 Cities
+--------------------------------------------------
+5
+0 12 10 19 8
+12 0 3 7 6
+10 3 0 2 20
+19 7 2 0 4
+8 6 20 4 0
+
+Choose Option 10, then Option 2 to load from file.
+
+====================================================================
+10. KNAPSACK PROBLEMS
+====================================================================
+
+MENU OPTION: 11
+
+Two types: 0/1 Knapsack and Unbounded Knapsack
+
+HOW TO CREATE problem.txt FOR KNAPSACK:
+--------------------------------------------------
+
+FORMAT:
+Line 1: Number of items
+Line 2: Knapsack capacity
+Line 3: Values (space-separated)
+Line 4: Weights (space-separated)
+
+EXAMPLE 1: 0/1 Knapsack (4 items)
+--------------------------------------------------
+4
+10
+10 5 15 7
+5 4 8 3
+
+Explanation:
+- 4 items available
+- Capacity = 10
+- Item 1: value=10, weight=5
+- Item 2: value=5, weight=4
+- Item 3: value=15, weight=8
+- Item 4: value=7, weight=3
+
+For 0/1: Each item can be taken at most once
+
+
+EXAMPLE 2: Unbounded Knapsack
+--------------------------------------------------
+3
+50
+60 100 120
+10 20 30
+
+For Unbounded: Items can be taken multiple times
+
+Choose Option 11, then:
+- Option 1 for 0/1 Knapsack
+- Option 2 for Unbounded Knapsack
+
+====================================================================
+11. SHORTEST PATH PROBLEMS
+====================================================================
+
+MENU OPTION: 12
+
+Two methods: Dijkstra's Algorithm and Grid-based
+
+METHOD 1: Dijkstra's Algorithm
+--------------------------------------------------
+For weighted graphs, finds shortest path from source to all nodes.
+
+problem.txt FORMAT:
+Line 1: Number of nodes
+Line 2: Source node (starting point)
+Lines 3+: Adjacency matrix (0 = no edge, value = edge weight)
+
+EXAMPLE: 5 Nodes
+--------------------------------------------------
+5
+1
+0 10 0 5 0
+10 0 1 2 0
+0 1 0 0 4
+5 2 0 0 2
+0 0 4 2 0
+
+Node 1 to Node 2: weight 10
+Node 1 to Node 4: weight 5
+etc.
+
+
+METHOD 2: Grid Path (Dynamic Programming)
+--------------------------------------------------
+For grid-based problems, finds minimum cost path from top-left
+to bottom-right.
+
+problem.txt FORMAT:
+Line 1: Number of rows
+Line 2: Number of columns
+Lines 3+: Grid values (space-separated)
+
+EXAMPLE: 3x3 Grid
+--------------------------------------------------
+3
+3
+1 3 1
+1 5 1
+4 2 1
+
+Finds minimum cost path from (0,0) to (2,2)
+
+====================================================================
+12. TIPS AND TROUBLESHOOTING
+====================================================================
+
+GENERAL TIPS:
+--------------------------------------------------
+✓ Save your problem in problem.txt before running
+✓ Use spaces (not tabs) to separate values
+✓ Variable names: x1, x2, x3 (lowercase x)
+✓ Check that supply = demand in transportation
+✓ For decimals, use . (dot) not , (comma)
+✓ Lines starting with # are comments (ignored)
+✓ Make sure file encoding is UTF-8
+
+
+COMMON ERRORS:
+--------------------------------------------------
+
+Error: "File not found"
+→ Make sure problem.txt is in the same folder as final_code.py
+
+Error: "Invalid constraint format"
+→ Check constraint syntax: x1 + 2x2 <= 5 (use <=, >=, or =)
+
+Error: "Unbalanced transportation problem"
+→ Total supply must equal total demand
+→ Program will add dummy source/destination if needed
+
+Error: "Infeasible solution"
+→ Constraints are contradictory
+→ Check your constraint values
+
+Error: "Unbounded solution"
+→ Objective can increase infinitely
+→ Add missing constraints
+
+
+FILE FORMAT CHECKLIST:
+--------------------------------------------------
+□ First line specifies max/min (for LP/Assignment)
+□ All numbers are space-separated
+□ No extra blank lines in the middle
+□ No commas in numbers (use 1000 not 1,000)
+□ Decimal point is . not ,
+□ Variables are x1, x2, not X1 or x_1
+
+
+TESTING YOUR INPUT:
+--------------------------------------------------
+1. Start with a simple problem first
+2. Use the examples in this guide
+3. Check the program output for errors
+4. Verify the problem summary matches your input
+5. If wrong, check problem.txt formatting
+
+
+NEED HELP?
+--------------------------------------------------
+1. Check FILE_FORMATS.txt for detailed format info
+2. Check TABLE_LOADING_GUIDE.txt for table formats
+3. Check example files: simplex_ex.txt, hungarian_example.txt, etc.
+4. Look at the case files: CASE2_QUICK_REFERENCE.txt, etc.
+
+====================================================================
+
+EXAMPLE WORKFLOW - LINEAR PROGRAMMING:
+--------------------------------------------------
+
+1. Create problem.txt:
+   max
+   z = 3x1 + 5x2
+   x1 <= 4
+   x2 <= 6
+   3x1 + 2x2 <= 18
+
+2. Run program:
+   python final_code.py
+
+3. Choose Option 1 (Load from File & Auto-Solve)
+
+4. Program automatically:
+   - Reads your problem
+   - Detects method (Simplex/Big-M)
+   - Solves step-by-step
+   - Shows final answer
+
+5. View the solution and optimal values!
+
+====================================================================
+
+EXAMPLE WORKFLOW - SENSITIVITY ANALYSIS:
+--------------------------------------------------
+
+1. Have an optimal table (from solving LP first)
+
+2. Create table.txt:
+   B.V. x1 x2 s1 s2 s3 Solution
+   Z 3 5 0 0 0 30
+   x1 1 0 0.667 -0.333 0 4
+   x2 0 1 -0.333 0.667 0 6
+   s3 0 0 0.333 0.167 1 3
+
+3. Run program, choose Option 8
+
+4. Choose Option 5 (Simple Table Format)
+
+5. Enter filename: table.txt
+
+6. Select sensitivity case (1-5)
+
+7. Answer questions about changes
+
+8. View sensitivity analysis results!
+
+====================================================================
+
+QUICK REFERENCE - MENU OPTIONS:
+--------------------------------------------------
+1.  Load from File & Auto-Solve → Use problem.txt
+2.  Continue from Table → Use table.txt (table format)
+3.  Dual Simplex → Use table.txt or manual input
+4.  Primal to Dual → Use problem.txt (LP format)
+5.  Matrix Method → Use problem.txt (LP format)
+6.  Hungarian → Use problem.txt (matrix format)
+7.  Transportation → Use problem.txt (supply/demand format)
+8.  Sensitivity → Use problem.txt or table.txt
+9.  Integer LP → Use problem.txt (LP format)
+10. TSP → Use problem.txt (distance matrix)
+11. Knapsack → Use problem.txt (items format)
+12. Shortest Path → Use problem.txt (graph/grid format)
+13. Exit
+
+====================================================================
+END OF USER GUIDE
+====================================================================
+
+For more examples, see:
+- simplex_ex.txt
+- hungarian_example.txt
+- transportation_example.txt
+- knapsack_example.txt
+- travelling_salesman.txt
+
+Happy solving! 🎓

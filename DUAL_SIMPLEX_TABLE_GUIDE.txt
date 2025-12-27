@@ -1,0 +1,252 @@
+================================================================================
+DUAL SIMPLEX TABLE INPUT GUIDE
+================================================================================
+
+OVERVIEW
+--------
+This guide explains how to input a simplex table with negative RHS values 
+(infeasible but optimal) to be solved using the Dual Simplex Method.
+
+WHEN TO USE
+-----------
+Use this method when you have a simplex table that is:
+- OPTIMAL (all Zj-Cj >= 0)
+- INFEASIBLE (one or more RHS values < 0)
+
+This situation commonly occurs in:
+- Sensitivity analysis (Case 2 - change in RHS)
+- Adding new constraints to an optimal solution
+- >= constraints converted to standard form
+
+================================================================================
+TABLE FORMAT
+================================================================================
+
+**IMPORTANT: DO NOT include the Z row when loading tables!**
+
+The table must be in the following format in 'problem.txt':
+
+B.V. var1 var2 var3 ... varN Solution
+bv1  a11  a12  a13  ... a1N  RHS1
+bv2  a21  a22  a23  ... a2N  RHS2
+...
+bvM  aM1  aM2  aM3  ... aMN  RHSM
+
+Where:
+- B.V. = Basic Variable column header (can also be: BV, B.V, BASIC)
+- var1, var2, ... = Variable names (x1, x2, s1, s2, etc.)
+- Solution = RHS column header (can also be: B, BI, RHS, SOLUTION(BI))
+- bv1, bv2, ... = Basic variable names for each row  
+- aij = Coefficients in the simplex table
+- RHS = Right-hand side values (at least one should be negative)
+
+**DO NOT INCLUDE Z ROW** - The program will calculate Cj values from the basic
+variables. If you include a Z row, it will be misinterpreted as Cj values.
+
+IMPORTANT:
+- All values must be separated by spaces (or tabs)
+- Use decimal numbers (e.g., 0.5, -2.0, 1.5)
+- Negative RHS values indicate infeasibility
+- The program will ask you for Cj values (objective coefficients) when loading
+
+================================================================================
+EXAMPLE 1: Simple Dual Simplex Problem
+================================================================================
+
+Problem Setup:
+--------------
+You solved: Maximize Z = 3x1 + 5x2
+Got optimal solution: x1=2, x2=6, s1=2, Z=36
+
+Then constraint 1 RHS changed, making s1 = -2 (infeasible!)
+
+The tableau after RHS change (with optimal indicators but infeasible):
+
+File Content (problem.txt):
+---------------------------
+B.V. x1 x2 s1 s2 s3 Solution
+s1 1 0 1 -1 0 -2
+x2 0 1 0 1 0 6
+s3 0 0 0 3 1 22
+
+Explanation:
+- Variables: x1, x2, s1, s2, s3
+- Basic variables: s1, x2, s3
+- s1 = -2 (NEGATIVE - infeasible!)
+- x2 = 6, s3 = 22
+- When loaded, program will ask for Cj values: [3, 5, 0, 0, 0]
+- Program will calculate Zj-Cj and verify all >= 0 (optimal indicators)
+
+The dual simplex method will:
+1. Identify s1 as leaving variable (most negative RHS = -2)
+2. Find entering variable using dual ratio test on negative elements in row 1
+3. Perform pivot to restore feasibility while maintaining optimality
+
+================================================================================
+EXAMPLE 2: After Sensitivity Analysis (Case 2)
+================================================================================
+
+Original optimal solution changed RHS:
+
+File Content (problem.txt):
+---------------------------
+B.V. x1 x2 x3 s1 s2 s3 Solution
+Z 0 0 0 3 2 0 240
+s1 0 2 0 1 -1 0 -4
+x1 1 0 0 0 1 0 8
+x3 0 0 1 0 0 1 12
+
+Explanation:
+- This table came from changing b1 in an optimal solution
+- All Zj-Cj >= 0: 0, 0, 0, 3, 2, 0 (OPTIMAL)
+- s1 = -4 (INFEASIBLE due to RHS change)
+- Dual simplex will find new optimal and feasible solution
+
+================================================================================
+HOW TO USE IN THE PROGRAM
+================================================================================
+
+Step 1: Prepare your table
+---------------------------
+Create 'problem.txt' with your table in the format shown above.
+
+Step 2: Run the program
+-----------------------
+1. Choose option "3. Dual Simplex Method" from main menu
+2. Choose option "3. Load Table from File (problem.txt)"
+3. The program will:
+   - Load the table
+   - Display it
+   - Check for negative RHS values
+   - Warn if no negative values found
+4. Confirm to continue with dual simplex
+
+Step 3: Monitor the solution
+-----------------------------
+The program will:
+- Show each iteration with the table
+- Identify leaving variable (most negative RHS)
+- Perform dual ratio test
+- Show entering variable
+- Pivot and show new table
+- Continue until feasibility is restored
+
+Step 4: Review results
+----------------------
+When optimal and feasible solution is found:
+- Decision variables will be displayed
+- Optimal Z value will be shown
+- Slack/surplus variables will be listed
+
+================================================================================
+COMMON ERRORS AND TROUBLESHOOTING
+================================================================================
+
+Error: "File must have at least 3 lines"
+Solution: Ensure you have header row, Z row, and at least one constraint row
+
+Error: "Row X has Y values, expected Z"
+Solution: Each row must have: B.V. name + N coefficients + 1 RHS value
+
+Warning: "No negative RHS values detected"
+Solution: Check if your table actually needs dual simplex
+         - Regular simplex is used when all RHS >= 0 and some Zj-Cj < 0
+         - Dual simplex needs all Zj-Cj >= 0 and some RHS < 0
+
+Error: "Table loading failed"
+Solution: Check file encoding (should be UTF-8), number format, spacing
+
+================================================================================
+COMPLETE WORKFLOW EXAMPLE
+================================================================================
+
+Scenario: You solved a problem and got optimal solution.
+         Then you changed RHS value which made solution infeasible.
+
+Step 1: Original Optimal Table
+-------------------------------
+B.V. x1 x2 s1 s2 Solution
+Z 0 0 3 2 60
+x1 1 0 2 -1 4
+x2 0 1 -1 2 6
+
+Step 2: Change RHS of constraint 1 from 10 to 2
+------------------------------------------------
+After recalculating with new RHS:
+
+B.V. x1 x2 s1 s2 Solution
+Z 0 0 3 2 60
+x1 1 0 2 -1 -4
+x2 0 1 -1 2 14
+
+Note: x1 = -4 (INFEASIBLE!)
+      All Zj-Cj still >= 0 (OPTIMAL indicators)
+
+Step 3: Save to problem.txt
+----------------------------
+B.V. x1 x2 s1 s2 Solution
+Z 0 0 3 2 60
+x1 1 0 2 -1 -4
+x2 0 1 -1 2 14
+
+Step 4: Run Dual Simplex
+-------------------------
+- Menu option 3 → option 3
+- Program identifies x1 as leaving (RHS = -4)
+- Performs dual ratio test
+- Pivots to restore feasibility
+- Shows new optimal and feasible solution
+
+================================================================================
+TIPS FOR SUCCESS
+================================================================================
+
+1. VERIFY YOUR TABLE:
+   - Check that all Zj-Cj values are >= 0
+   - Confirm at least one RHS value is negative
+   - Ensure column count is consistent across all rows
+
+2. VARIABLE NAMING:
+   - Use consistent naming (x1, x2, ... for decision variables)
+   - Use s1, s2, ... for slack variables
+   - Use S1, S2, ... for surplus variables (if any)
+
+3. DECIMAL VALUES:
+   - Use decimals for fractions (e.g., 0.5 instead of 1/2)
+   - Negative values need minus sign (e.g., -2.5)
+   - Zero is just 0 (not 0.0, though 0.0 works too)
+
+4. PROBLEM TYPE:
+   - The program will ask if it's maximization
+   - Answer based on your original problem type
+   - This affects how the optimal value is calculated
+
+5. NUMBER OF DECISION VARIABLES:
+   - The program will try to detect this automatically
+   - It looks for variables named x1, x2, x3, ...
+   - If detection fails, you'll be asked to enter manually
+
+================================================================================
+MATHEMATICAL BACKGROUND
+================================================================================
+
+Dual Simplex Method is used when:
+- Dual feasibility is satisfied (all Zj-Cj >= 0)
+- Primal feasibility is violated (some RHS < 0)
+
+The method:
+1. Selects row with most negative RHS as leaving variable
+2. Uses dual ratio test to find entering variable:
+   - Calculate |Zj-Cj / aij| for all j where aij < 0
+   - Choose minimum ratio
+3. Pivots to improve primal feasibility
+4. Maintains dual feasibility throughout
+5. Terminates when primal feasibility is restored
+
+Strong Duality Theorem guarantees:
+- If both primal and dual are feasible, optimal values are equal
+- Dual simplex moves from dual feasible to primal feasible region
+
+================================================================================
+END OF GUIDE
+================================================================================

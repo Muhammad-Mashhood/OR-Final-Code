@@ -1,0 +1,30 @@
+# Example Optimal Table File Format
+# This table represents an optimal solution
+# Use this format for loading optimal tables for sensitivity analysis
+
+# Problem Type
+max
+
+# Number of decision variables
+2
+
+# Number of slack/surplus variables  
+3
+
+# Number of constraints
+3
+
+# Cj values (x1, x2, s1, s2, s3)
+3 5 0 0 0
+
+# Basic variables
+x1 s2 x2
+
+# Cb values
+3 0 5
+
+# Optimal table (each row: coefficients for all variables + RHS)
+# Rows correspond to basic variables x1, s2, x2
+1 0 0.667 -0.333 0 4
+0 0 -0.333 0.667 0 2
+0 1 -0.333 0.667 0 6

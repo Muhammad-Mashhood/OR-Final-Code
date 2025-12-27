@@ -2,6 +2,91 @@
 FILE FORMAT GUIDE - Updated Simple Formats
 ====================================================================
 
+LINEAR PROGRAMMING PROBLEM (problem.txt)
+====================================================================
+
+LINE-BY-LINE FORMAT
+
+Line 1: max OR min
+Line 2: Objective function (e.g., z = 3x1 + 5x2)
+Lines 3+: Constraints (e.g., x1 <= 4)
+
+EXAMPLE:
+max
+z = 3x1 + 5x2
+x1 <= 4
+x2 <= 6
+3x1 + 2x2 <= 18
+
+====================================================================
+
+SIMPLEX TABLE - SIMPLE FORMAT (RECOMMENDED)
+====================================================================
+
+SPACE-SEPARATED TABLE (like Excel/textbook format)
+
+Line 1: Header row (B.V. x1 x2 ... Solution)
+Line 2: Z row (objective function values)
+Lines 3+: Constraint rows (basic variable + coefficients + RHS)
+
+EXAMPLE 1 (From your image):
+B.V. x1 x2 x3 x4 x5 x6 Solution
+Z 0 40 0 20 0 10 10500
+x1 1 6 0 2 0 -1 150
+x5 0 -7 0 -3 1 1 50
+x3 0 -2 1 -1 0 1 150
+
+EXAMPLE 2 (Smaller problem):
+B.V. x1 x2 s1 s2 s3 Solution
+Z 3 5 0 0 0 30
+x1 1 0 0.667 -0.333 0 4
+x2 0 1 -0.333 0.667 0 6
+s3 0 0 0.333 0.167 1 3
+
+Notes:
+- First column is "B.V." (Basic Variables)
+- Last column is "Solution" (or b, bi, RHS)
+- First data row must be Z (objective function)
+- All values must be space-separated
+- Lines starting with # are ignored (comments)
+- Supports negative numbers and decimals
+
+====================================================================
+
+SIMPLEX TABLE - DETAILED FORMAT (Alternative)
+====================================================================
+
+LINE-BY-LINE FORMAT
+
+Line 1: max OR min
+Line 2: Number of decision variables
+Line 3: Number of slack/surplus variables
+Line 4: Number of constraints (rows)
+Line 5: Cj values (space-separated)
+Line 6: Basic variable names (space-separated)
+Line 7: Cb values (space-separated)
+Lines 8+: Table rows (coefficients + RHS, space-separated)
+
+EXAMPLE (2 decision vars, 3 slack vars, 3 constraints):
+max
+2
+3
+3
+3 5 0 0 0
+x1 s2 s3
+3 0 0
+1 0 0.667 -0.333 4
+0 1 -0.333 0.667 3
+0 0 0.333 0.167 3
+
+Notes:
+- Each table row has (num_vars + num_slack + 1) values
+- The last value in each row is the RHS
+- Variable names auto-generated: x1, x2, ..., s1, s2, ...
+- Lines starting with # are ignored as comments
+
+====================================================================
+
 TRANSPORTATION PROBLEM (problem.txt)
 ====================================================================
 
@@ -61,5 +146,6 @@ USAGE NOTES
 3. For transportation: Total Supply should equal Total Demand
 4. For assignment: Matrix can be any size (program handles non-square)
 5. Files are auto-detected, no type declaration needed
+6. For simplex tables: Use exact decimal values as shown in tableau
 
 ====================================================================

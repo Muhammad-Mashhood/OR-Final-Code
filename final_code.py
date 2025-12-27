@@ -1,5 +1,3 @@
-
-
 def clear_screen ():
 
     print ("\n"+"="*80 +"\n")
@@ -879,7 +877,7 @@ def check_dual_feasibility (table ):
     is_feasible =(negative_row ==-1 )
     return is_feasible ,negative_row ,most_negative 
 
-def find_dual_pivot_column (table ,pivot_row ,zj_cj ):
+def find_dual_pivot_column (table ,pivot_row ,zj_cj ,basic_vars ,var_names ):
 
     min_ratio =float ('inf')
     pivot_col =-1 
@@ -948,7 +946,74 @@ def solve_dual_simplex (problem ,var_prefix ='x'):
         print (f"\nLeaving Variable: {basic_vars [negative_row ]} (RHS = {print_fraction (most_negative )})")
         print (f"Leaving Row: {negative_row +1 }")
 
-        pivot_col ,min_ratio ,ratios =find_dual_pivot_column (table ,negative_row ,zj_cj )
+        pivot_col ,min_ratio ,ratios =find_dual_pivot_column (table ,negative_row ,zj_cj ,basic_vars ,var_names )
+
+        if pivot_col ==-1 :
+            print ("\n"+"!"*80 )
+            print ("INFEASIBLE SOLUTION!")
+            print ("No entering variable found. Problem has no feasible solution.")
+            print ("!"*80 )
+            return None 
+
+        print ("\nDual Simplex Ratio Test (Minimum |Zj-Cj / element|):")
+        print ("-"*40 )
+        for j ,element ,zj_cj_val ,ratio in ratios :
+            print (f"  Column {var_names [j ]}: |{print_fraction (zj_cj_val )} / {print_fraction (element )}| = {print_fraction (ratio )}")
+
+        print (f"\nEntering Variable: {var_names [pivot_col ]} (minimum ratio = {print_fraction (min_ratio )})")
+
+        input ("\n>>> Press Enter to perform pivot operation and see next iteration...")
+
+        pivot_row =negative_row 
+        table ,basic_vars ,cb =perform_pivot_operation (table ,pivot_row ,pivot_col ,basic_vars ,var_names ,cb ,cj )
+
+        iteration +=1 
+
+    return optimal_value 
+
+def continue_dual_simplex_from_table (table ,basic_vars ,var_names ,cj ,cb ,problem ,start_iteration =0 ):
+
+    print ("\n"+"#"*80 )
+    print ("CONTINUING DUAL SIMPLEX METHOD FROM TABLE")
+    print ("#"*80 )
+
+    iteration =start_iteration 
+    optimal_value =None 
+
+    while True :
+        num_vars =len (var_names )
+        zj =calculate_zj (table ,cb ,num_vars )
+        zj_cj =calculate_zj_cj (zj ,cj ,None )
+
+        is_feasible ,negative_row ,most_negative =check_dual_feasibility (table )
+
+        if is_feasible :
+            print (f"\n{'='*80 }")
+            print (f"ITERATION {iteration }")
+            print ('='*80 )
+            zj_final ,zj_cj_final =print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration )
+            
+            print ("\n"+"="*80 )
+            print ("OPTIMAL SOLUTION FOUND!")
+            print ("="*80 )
+            
+            solution =extract_solution (table ,basic_vars ,var_names ,problem ['is_max'])
+            print_solution (solution ,var_names ,zj_final ,problem ['is_max'],problem ['num_vars'])
+
+            optimal_value =zj_final [-1 ]
+            if not problem ['is_max']:
+                optimal_value =-optimal_value 
+            break 
+
+        print (f"\n{'='*80 }")
+        print (f"ITERATION {iteration }")
+        print ('='*80 )
+        zj ,zj_cj =print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration )
+
+        print (f"\nLeaving Variable: {basic_vars [negative_row ]} (RHS = {print_fraction (most_negative )})")
+        print (f"Leaving Row: {negative_row +1 }")
+
+        pivot_col ,min_ratio ,ratios =find_dual_pivot_column (table ,negative_row ,zj_cj ,basic_vars ,var_names )
 
         if pivot_col ==-1 :
             print ("\n"+"!"*80 )
@@ -978,47 +1043,6 @@ def convert_to_dual (problem ):
     print ("\n"+"#"*80 )
     print ("PRIMAL TO DUAL CONVERSION")
     print ("#"*80 )
-
-    print ("\nCONVERSION RULES:")
-    print ("-"*80 )
-
-    if problem ['is_max']:
-        print ("Primal (Maximization) -> Dual (Minimization)")
-        print ()
-        print ("Primal:                    Dual:")
-        print ("  Max Z = Sum(cj * xj)      Min W = Sum(bi * yi)")
-        print ("  Sum(aij * xj) <= bi       Sum(aij * yi) >= cj  (for each j)")
-        print ("  xj >= 0                    yi >= 0")
-    else :
-        if all (ct ==1 for ct in problem ['constraint_types']):
-            print ("Primal (Minimization with <=) -> Dual (Maximization with <=)")
-            print ()
-            print ("Primal:                    Dual:")
-            print ("  Min Z = Sum(cj * xj)      Max W = Sum(-bi * yi)  NOTE: -bi !")
-            print ("  Sum(aij * xj) <= bi       Sum(aij * yi) <= cj  (for each j)")
-            print ("  xj >= 0                    yi >= 0")
-            print ()
-            print ("CRITICAL: For Min with <=, dual has:")
-            print ("  • Objective: -b (negative RHS)")
-            print ("  • Constraints: <= (same as primal)")
-        else :
-            print ("Primal (Minimization with >=) -> Dual (Maximization with <=)")
-            print ()
-            print ("Primal:                    Dual:")
-            print ("  Min Z = Sum(cj * xj)      Max W = Sum(bi * yi)")
-            print ("  Sum(aij * xj) >= bi       Sum(aij * yi) <= cj  (for each j)")
-            print ("  xj >= 0                    yi >= 0")
-
-    print ("\nKEY TRANSFORMATIONS:")
-    print ("  - Number of primal constraints = Number of dual variables")
-    print ("  - Number of primal variables = Number of dual constraints")
-    print ("  - Primal objective coefficients -> Dual RHS values")
-    print ("  - Primal RHS values -> Dual objective coefficients")
-    if not problem ['is_max']and all (ct ==1 for ct in problem ['constraint_types']):
-        print ("  - FOR MIN WITH <=: Dual obj = -b (negative!)")
-    print ("  - Constraint matrix A is transposed (rows <-> columns)")
-    print ("  - IMPORTANT: By Strong Duality Theorem, optimal values are equal!")
-    print ("-"*80 )
 
     input ("\nPress Enter to see the dual problem...")
 
@@ -3176,7 +3200,7 @@ def apply_dual_simplex_to_table (table ,basic_vars ,var_names ,cj ,cb ,problem )
 
         print (f"\nLeaving Variable: {basic_vars [negative_row ]} (RHS = {print_fraction (most_negative )})")
 
-        pivot_col ,min_ratio ,ratios =find_dual_pivot_column (table ,negative_row ,zj_cj )
+        pivot_col ,min_ratio ,ratios =find_dual_pivot_column (table ,negative_row ,zj_cj ,basic_vars ,var_names )
 
         if pivot_col ==-1 :
             print ("\n"+"!"*80 )
@@ -3261,20 +3285,10 @@ def find_shadow_price_via_dual (problem ,table ,basic_vars ,var_names ,cj ,cb ,r
 
     print ("\nDUAL CONVERSION RULES:")
     if problem ['is_max']:
-        print ("  Primal (Max) -> Dual (Min)")
-        print ("  • Number of dual variables = Number of primal constraints")
-        print ("  • Dual objective coefficients = Primal RHS values")
-        print ("  • Dual RHS values = Primal objective coefficients")
-        print ("  • Primal <= constraint -> Dual variable >= 0")
-        print ("  • Transpose constraint matrix")
+      
         dual_is_max =False 
     else :
-        print ("  Primal (Min) -> Dual (Max)")
-        print ("  • Number of dual variables = Number of primal constraints")
-        print ("  • Dual objective coefficients = Primal RHS values")
-        print ("  • Dual RHS values = Primal objective coefficients")
-        print ("  • Primal >= constraint -> Dual variable >= 0")
-        print ("  • Transpose constraint matrix")
+       
         dual_is_max =True 
 
     print (f"\n{'='*80 }")
@@ -4538,6 +4552,534 @@ def sensitivity_analysis_case5_menu (problem ,table ,basic_vars ,var_names ,cj ,
 
     return table ,basic_vars ,var_names ,cj ,cb 
 
+def input_optimal_table ():
+
+    print ("\n"+"="*80 )
+    print ("INPUT OPTIMAL SIMPLEX TABLE DIRECTLY")
+    print ("="*80 )
+
+    print ("\n1. Maximization")
+    print ("2. Minimization")
+    prob_type =get_int_input ("Enter problem type (1-2): ")
+    is_max =(prob_type ==1 )
+
+    num_vars =get_int_input ("\nEnter number of decision variables: ")
+    num_slack =get_int_input ("Enter number of slack/surplus variables: ")
+    num_constraints =get_int_input ("Enter number of constraints (rows in table): ")
+
+    total_vars =num_vars +num_slack 
+
+    var_names =[]
+    for i in range (num_vars ):
+        var_names .append (f"x{i +1 }")
+    for i in range (num_slack ):
+        var_names .append (f"s{i +1 }")
+
+    print (f"\n{'='*80 }")
+    print ("ENTER OPTIMAL TABLE DATA")
+    print ('='*80 )
+
+    print ("\nEnter Cj values (objective coefficients):")
+    cj =[]
+    for i ,var in enumerate (var_names ):
+        val =get_float_input (f"  Cj for {var }: ")
+        cj .append (val )
+
+    print (f"\nEnter basic variables (one per row):")
+    basic_vars =[]
+    for i in range (num_constraints ):
+        var_name =input (f"  Basic variable in row {i +1 }: ").strip ()
+        basic_vars .append (var_name )
+
+    print (f"\nEnter Cb values (objective coefficients of basic variables):")
+    cb =[]
+    for i ,bv in enumerate (basic_vars ):
+        val =get_float_input (f"  Cb for {bv }: ")
+        cb .append (val )
+
+    print (f"\nEnter the optimal table values:")
+    print (f"For each row, enter {total_vars } coefficients + RHS (total {total_vars +1 } values)")
+
+    table =[]
+    for i in range (num_constraints ):
+        print (f"\nRow {i +1 } (Basic variable: {basic_vars [i ]}):")
+        row =[]
+        for j in range (total_vars ):
+            val =get_float_input (f"  Coefficient for {var_names [j ]}: ")
+            row .append (val )
+        rhs =get_float_input (f"  RHS (Solution value): ")
+        row .append (rhs )
+        table .append (row )
+
+    print ("\n"+"="*80 )
+    print ("TABLE INPUT COMPLETE")
+    print ("="*80 )
+
+    print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration =0 )
+
+    print ("\nVerifying optimality...")
+    num_vars_check =len (var_names )
+    zj =calculate_zj (table ,cb ,num_vars_check )
+    zj_cj =calculate_zj_cj (zj ,cj ,None )
+
+    if check_optimality (zj_cj ):
+        print ("\n✓ Table appears to be optimal (all Zj-Cj >= 0)")
+    else :
+        print ("\n⚠ Warning: Some Zj-Cj values are negative.")
+        print ("  This table may not represent an optimal solution.")
+        proceed =input ("Continue anyway? (y/n): ").lower ()
+        if proceed !='y':
+            return None 
+
+    problem ={
+    'is_max':is_max ,
+    'num_vars':num_vars ,
+    'num_constraints':num_constraints ,
+    'obj_coef':cj [:num_vars ],
+    'constraints':[[0 ]*num_vars for _ in range (num_constraints )],
+    'constraint_types':[1 ]*num_constraints ,
+    'rhs':[table [i ][-1 ]for i in range (num_constraints )]
+    }
+
+    return problem ,table ,basic_vars ,var_names ,cj ,cb 
+
+def input_simplex_table_for_continuation ():
+
+    print ("\n"+"="*80 )
+    print ("INPUT SIMPLEX TABLE TO CONTINUE SOLVING")
+    print ("="*80 )
+
+    print ("\n1. Maximization")
+    print ("2. Minimization")
+    prob_type =get_int_input ("Enter problem type (1-2): ")
+    is_max =(prob_type ==1 )
+
+    num_vars =get_int_input ("\nEnter number of decision variables: ")
+    num_slack =get_int_input ("Enter number of slack/surplus variables: ")
+    num_constraints =get_int_input ("Enter number of constraints (rows in table): ")
+
+    total_vars =num_vars +num_slack 
+
+    var_names =[]
+    for i in range (num_vars ):
+        var_names .append (f"x{i +1 }")
+    for i in range (num_slack ):
+        var_names .append (f"s{i +1 }")
+
+    print (f"\n{'='*80 }")
+    print ("ENTER SIMPLEX TABLE DATA")
+    print ('='*80 )
+
+    print ("\nEnter Cj values (objective coefficients):")
+    cj =[]
+    for i ,var in enumerate (var_names ):
+        val =get_float_input (f"  Cj for {var }: ")
+        cj .append (val )
+
+    print (f"\nEnter basic variables (one per row):")
+    basic_vars =[]
+    for i in range (num_constraints ):
+        var_name =input (f"  Basic variable in row {i +1 }: ").strip ()
+        basic_vars .append (var_name )
+
+    print (f"\nEnter Cb values (objective coefficients of basic variables):")
+    cb =[]
+    for i ,bv in enumerate (basic_vars ):
+        val =get_float_input (f"  Cb for {bv }: ")
+        cb .append (val )
+
+    print (f"\nEnter the table values:")
+    print (f"For each row, enter {total_vars } coefficients + RHS (total {total_vars +1 } values)")
+
+    table =[]
+    for i in range (num_constraints ):
+        print (f"\nRow {i +1 } (Basic variable: {basic_vars [i ]}):")
+        row =[]
+        for j in range (total_vars ):
+            val =get_float_input (f"  Coefficient for {var_names [j ]}: ")
+            row .append (val )
+        rhs =get_float_input (f"  RHS (Solution value): ")
+        row .append (rhs )
+        table .append (row )
+
+    print ("\n"+"="*80 )
+    print ("TABLE INPUT COMPLETE")
+    print ("="*80 )
+
+    print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration =0 )
+
+    confirm =input ("\nIs this table correct? (y/n): ").lower ()
+    if confirm !='y':
+        return None 
+
+    problem ={
+    'is_max':is_max ,
+    'num_vars':num_vars ,
+    'num_constraints':num_constraints ,
+    'obj_coef':cj [:num_vars ],
+    'constraints':[[0 ]*num_vars for _ in range (num_constraints )],
+    'constraint_types':[1 ]*num_constraints ,
+    'rhs':[table [i ][-1 ]for i in range (num_constraints )]
+    }
+
+    return problem ,table ,basic_vars ,var_names ,cj ,cb 
+
+def read_simplex_table_from_file (filename ='table.txt'):
+
+    try :
+        with open (filename ,'r',encoding ='utf-8-sig')as f :
+            raw_lines =f .readlines ()
+
+        if raw_lines :
+            raw_lines [0 ]=raw_lines [0 ].lstrip ('\ufeff').lstrip ('\ufffe')
+
+        lines =[line .strip ()for line in raw_lines if line .strip ()and not line .strip ().startswith ('#')]
+
+        if len (lines )<6 :
+            print ("Error: File must have at least 6 lines (type, num_vars, num_slack, num_constraints, Cj values, basic vars, Cb values, and table rows)")
+            return None 
+
+        line_idx =0 
+
+        prob_type =lines [line_idx ].lower ()
+        if prob_type not in ['max','min','maximize','minimization']:
+            print (f"Error: First line must be 'max' or 'min', got '{lines [line_idx ]}'")
+            return None 
+        is_max =prob_type in ['max','maximize']
+        line_idx +=1 
+
+        num_vars =int (lines [line_idx ])
+        line_idx +=1 
+        num_slack =int (lines [line_idx ])
+        line_idx +=1 
+        num_constraints =int (lines [line_idx ])
+        line_idx +=1 
+
+        total_vars =num_vars +num_slack 
+
+        var_names =[]
+        for i in range (num_vars ):
+            var_names .append (f"x{i +1 }")
+        for i in range (num_slack ):
+            var_names .append (f"s{i +1 }")
+
+        cj_values =lines [line_idx ].split ()
+        if len (cj_values )!=total_vars :
+            print (f"Error: Expected {total_vars } Cj values, got {len (cj_values )}")
+            return None 
+        cj =[float (v )for v in cj_values ]
+        line_idx +=1 
+
+        basic_vars =lines [line_idx ].split ()
+        if len (basic_vars )!=num_constraints :
+            print (f"Error: Expected {num_constraints } basic variables, got {len (basic_vars )}")
+            return None 
+        line_idx +=1 
+
+        cb_values =lines [line_idx ].split ()
+        if len (cb_values )!=num_constraints :
+            print (f"Error: Expected {num_constraints } Cb values, got {len (cb_values )}")
+            return None 
+        cb =[float (v )for v in cb_values ]
+        line_idx +=1 
+
+        table =[]
+        for i in range (num_constraints ):
+            if line_idx >=len (lines ):
+                print (f"Error: Not enough rows in file. Expected {num_constraints } rows, got {i }")
+                return None 
+            row_values =lines [line_idx ].split ()
+            if len (row_values )!=total_vars +1 :
+                print (f"Error: Row {i +1 } should have {total_vars +1 } values (coefficients + RHS), got {len (row_values )}")
+                return None 
+            row =[float (v )for v in row_values ]
+            table .append (row )
+            line_idx +=1 
+
+        print ("\n"+"="*80 )
+        print (f"TABLE LOADED FROM '{filename }'")
+        print ("="*80 )
+        print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration =0 )
+
+        problem ={
+        'is_max':is_max ,
+        'num_vars':num_vars ,
+        'num_constraints':num_constraints ,
+        'obj_coef':cj [:num_vars ],
+        'constraints':[[0 ]*num_vars for _ in range (num_constraints )],
+        'constraint_types':[1 ]*num_constraints ,
+        'rhs':[table [i ][-1 ]for i in range (num_constraints )]
+        }
+
+        return problem ,table ,basic_vars ,var_names ,cj ,cb 
+
+    except FileNotFoundError :
+        print (f"Error: File '{filename }' not found.")
+        return None 
+    except ValueError as e :
+        print (f"Error parsing numbers in file: {e }")
+        return None 
+    except Exception as e :
+        print (f"Error reading file: {e }")
+        return None 
+
+def read_optimal_table_from_file (filename ='optimal_table.txt'):
+
+    result =read_simplex_table_from_file (filename )
+    if result is None :
+        return None 
+
+    problem ,table ,basic_vars ,var_names ,cj ,cb =result 
+
+    print ("\nVerifying optimality...")
+    num_vars_check =len (var_names )
+    zj =calculate_zj (table ,cb ,num_vars_check )
+    zj_cj =calculate_zj_cj (zj ,cj ,None )
+
+    if check_optimality (zj_cj ):
+        print ("\n✓ Table appears to be optimal (all Zj-Cj >= 0)")
+    else :
+        print ("\n⚠ Warning: Some Zj-Cj values are negative.")
+        print ("  This table may not represent an optimal solution.")
+        proceed =input ("Continue anyway? (y/n): ").lower ()
+        if proceed !='y':
+            return None 
+
+    return problem ,table ,basic_vars ,var_names ,cj ,cb 
+
+def read_table_simple_format (filename ='table.txt'):
+
+    try :
+        with open (filename ,'r',encoding ='utf-8-sig')as f :
+            raw_lines =f .readlines ()
+
+        if raw_lines :
+            raw_lines [0 ]=raw_lines [0 ].lstrip ('\ufeff').lstrip ('\ufffe')
+
+        lines =[line .strip ()for line in raw_lines if line .strip ()and not line .strip ().startswith ('#')]
+
+        if len (lines )<3 :
+            print ("Error: File must have at least 3 lines (header row, Z row, and at least one constraint row)")
+            return None 
+
+        header_parts =lines [0 ].split ()
+        
+        if len (header_parts )<4 :
+            print ("Error: Header must have at least: B.V. variable1 variable2 ... Solution")
+            return None 
+
+        if header_parts [0 ].upper ()not in ['B.V.','BV','B.V','BASIC']:
+            print (f"Warning: First column should be 'B.V.' but got '{header_parts [0 ]}'")
+        
+        if header_parts [-1 ].upper ()not in ['SOLUTION','B','BI','RHS','SOLUTION(BI)']:
+            print (f"Warning: Last column should be 'Solution' but got '{header_parts [-1 ]}'")
+
+        var_names =header_parts [1 :-1 ]
+        num_vars =len (var_names )
+
+        print (f"\nDetected {num_vars } variables: {', '.join (var_names )}")
+
+        table_rows =lines [1 :]
+        num_rows =len (table_rows )
+
+        basic_vars =[]
+        table =[]
+        z_row =None 
+        constraint_rows =[]
+
+        for i ,line in enumerate (table_rows ):
+            parts =line .split ()
+            if len (parts )!=num_vars +2 :
+                print (f"Error: Row {i +2 } has {len (parts )} values, expected {num_vars +2 } (B.V. + {num_vars } coefficients + RHS)")
+                return None 
+
+            bv_name =parts [0 ]
+            coefficients =[float (x )for x in parts [1 :-1 ]]
+            rhs =float (parts [-1 ])
+
+            if bv_name .upper ()in ['Z','OBJ','OBJECTIVE']:
+                z_row =(coefficients ,rhs )
+            else :
+                basic_vars .append (bv_name )
+                row_data =coefficients +[rhs ]
+                table .append (row_data )
+
+        if z_row is None :
+            print ("Error: Could not find Z row (objective function row)")
+            return None 
+
+        cj ,z_value =z_row 
+        num_constraints =len (basic_vars )
+
+        print (f"Found {num_constraints } constraints with basic variables: {', '.join (basic_vars )}")
+
+        cb =[]
+        for bv in basic_vars :
+            if bv in var_names :
+                idx =var_names .index (bv )
+                cb .append (cj [idx ])
+            else :
+                cb .append (0.0 )
+
+        print ("\n"+"="*80 )
+        print (f"TABLE LOADED FROM '{filename }' (Simple Format)")
+        print ("="*80 )
+
+        print ("\nDo you want to:")
+        print ("1. Continue solving (Simplex - for non-optimal tables)")
+        print ("2. Use for Sensitivity Analysis (for optimal tables)")
+        choice =get_int_input ("Enter choice (1-2): ")
+
+        is_max =True 
+        type_choice =input ("\nIs this a maximization problem? (y/n): ").lower ()
+        if type_choice =='n':
+            is_max =False 
+
+        num_decision_vars =0 
+        for var in var_names :
+            if var .startswith ('x')and not var .startswith ('xs'):
+                try :
+                    var_num =int (var [1 :])
+                    num_decision_vars =max (num_decision_vars ,var_num )
+                except :
+                    pass 
+
+        if num_decision_vars ==0 :
+            num_decision_vars =get_int_input ("\nEnter number of decision variables: ")
+
+        print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration =0 )
+
+        problem ={
+        'is_max':is_max ,
+        'num_vars':num_decision_vars ,
+        'num_constraints':num_constraints ,
+        'obj_coef':cj [:num_decision_vars ],
+        'constraints':[[0 ]*num_decision_vars for _ in range (num_constraints )],
+        'constraint_types':[1 ]*num_constraints ,
+        'rhs':[table [i ][-1 ]for i in range (num_constraints )]
+        }
+
+        return problem ,table ,basic_vars ,var_names ,cj ,cb ,choice 
+
+    except FileNotFoundError :
+        print (f"Error: File '{filename }' not found.")
+        return None 
+    except ValueError as e :
+        print (f"Error parsing numbers in file: {e }")
+        print ("Make sure all table values are numbers separated by spaces")
+        return None 
+    except Exception as e :
+        print (f"Error reading file: {e }")
+        return None 
+
+def read_dual_simplex_table (filename ='problem.txt'):
+
+    try :
+        with open (filename ,'r',encoding ='utf-8-sig')as f :
+            raw_lines =f .readlines ()
+
+        if raw_lines :
+            raw_lines [0 ]=raw_lines [0 ].lstrip ('\ufeff').lstrip ('\ufffe')
+
+        lines =[line .strip ()for line in raw_lines if line .strip ()and not line .strip ().startswith ('#')]
+
+        if len (lines )<2 :
+            print ("Error: File must have at least 2 lines (header row and at least one constraint row)")
+            return None 
+
+        header_parts =lines [0 ].split ()
+        
+        if len (header_parts )<4 :
+            print ("Error: Header must have at least: B.V. variable1 variable2 ... Solution")
+            return None 
+
+        var_names =header_parts [1 :-1 ]
+        num_vars =len (var_names )
+
+        print (f"\nDetected {num_vars } variables: {', '.join (var_names )}")
+
+        table_rows =lines [1 :]
+        basic_vars =[]
+        table =[]
+
+        for i ,line in enumerate (table_rows ):
+            parts =line .split ()
+            if len (parts )!=num_vars +2 :
+                print (f"Error: Row {i +2 } has {len (parts )} values, expected {num_vars +2 }")
+                return None 
+
+            bv_name =parts [0 ]
+            coefficients =[float (x )for x in parts [1 :-1 ]]
+            rhs =float (parts [-1 ])
+
+            basic_vars .append (bv_name )
+            row_data =coefficients +[rhs ]
+            table .append (row_data )
+
+        num_constraints =len (basic_vars )
+        print (f"Found {num_constraints } constraints with basic variables: {', '.join (basic_vars )}")
+
+        is_max =True 
+        type_choice =input ("\nIs this a maximization problem? (y/n): ").lower ()
+        if type_choice =='n':
+            is_max =False 
+
+        num_decision_vars =0 
+        for var in var_names :
+            if var .startswith ('x')and not var .startswith ('xs'):
+                try :
+                    var_num =int (var [1 :])
+                    num_decision_vars =max (num_decision_vars ,var_num )
+                except :
+                    pass 
+
+        if num_decision_vars ==0 :
+            num_decision_vars =get_int_input ("\nEnter number of decision variables: ")
+
+        print (f"\nPlease enter the objective function coefficients (Cj) for each variable:")
+        print (f"Variables: {', '.join (var_names )}")
+        cj =[]
+        for var in var_names :
+            val =get_float_input (f"  Cj for {var }: ")
+            cj .append (val )
+
+        cb =[]
+        for bv in basic_vars :
+            if bv in var_names :
+                idx =var_names .index (bv )
+                cb .append (cj [idx ])
+            else :
+                cb .append (0.0 )
+
+        print ("\n"+"="*80 )
+        print (f"DUAL SIMPLEX TABLE LOADED FROM '{filename }'")
+        print ("="*80 )
+
+        print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration =0 )
+
+        problem ={
+        'is_max':is_max ,
+        'num_vars':num_decision_vars ,
+        'num_constraints':num_constraints ,
+        'obj_coef':cj [:num_decision_vars ],
+        'constraints':[[0 ]*num_decision_vars for _ in range (num_constraints )],
+        'constraint_types':[1 ]*num_constraints ,
+        'rhs':[table [i ][-1 ]for i in range (num_constraints )]
+        }
+
+        return problem ,table ,basic_vars ,var_names ,cj ,cb 
+
+    except FileNotFoundError :
+        print (f"Error: File '{filename }' not found.")
+        return None 
+    except ValueError as e :
+        print (f"Error parsing numbers in file: {e }")
+        print ("Make sure all table values are numbers separated by spaces")
+        return None 
+    except Exception as e :
+        print (f"Error reading file: {e }")
+        return None 
+
 def sensitivity_analysis_menu (problem ,table ,basic_vars ,var_names ,cj ,cb ,is_optimal ):
 
     print ("\n"+"="*80 )
@@ -4586,8 +5128,9 @@ def sensitivity_analysis_menu (problem ,table ,basic_vars ,var_names ,cj ,cb ,is
             print ("1. Find range for a coefficient (where solution remains optimal)")
             print ("2. Change a specific coefficient value")
             print ("3. Find ranges for all coefficients")
+            print ("4. Analyze why non-basic variable is not in solution")
 
-            option =get_int_input ("\nEnter choice (1-3): ")
+            option =get_int_input ("\nEnter choice (1-4): ")
 
             if option ==1 :
                 print (f"\nAvailable variables: {', '.join ([f'{i +1 }. {var_names [i ]}'for i in range (problem ['num_vars'])])}")
@@ -4640,6 +5183,113 @@ def sensitivity_analysis_menu (problem ,table ,basic_vars ,var_names ,cj ,cb ,is
                     input (f"\nPress Enter to find range for {var_names [i ]}...")
                     find_objective_coefficient_range (table ,basic_vars ,var_names ,cj ,cb ,i ,problem ['is_max'])
 
+            elif option ==4 :
+                print ("\n"+"="*80 )
+                print ("ANALYSIS: WHY IS A VARIABLE NOT IN THE OPTIMAL SOLUTION?")
+                print ("="*80 )
+
+                non_basic_vars =[]
+                for i in range (problem ['num_vars']):
+                    if var_names [i ]not in basic_vars :
+                        non_basic_vars .append ((i ,var_names [i ]))
+
+                if not non_basic_vars :
+                    print ("\nAll decision variables are in the optimal solution (basic).")
+                    print ("This analysis is only for non-basic variables.")
+                else :
+                    print ("\nNon-basic variables (currently at value 0):")
+                    for idx ,(var_idx ,var_name )in enumerate (non_basic_vars ):
+                        print (f"{idx +1 }. {var_name } (C{var_idx +1 } = {cj [var_idx ]})")
+
+                    var_choice =get_int_input (f"\nSelect variable to analyze (1-{len (non_basic_vars )}): ")
+
+                    if 1 <=var_choice <=len (non_basic_vars ):
+                        var_index ,var_name =non_basic_vars [var_choice -1 ]
+
+                        print (f"\n{'='*80 }")
+                        print (f"WHY IS {var_name } NOT IN THE OPTIMAL SOLUTION?")
+                        print ('='*80 )
+
+                        zj =0 
+                        for i ,bv in enumerate (basic_vars ):
+                            zj +=cb [i ]*table [i ][var_index ]
+
+                        current_c =cj [var_index ]
+                        reduced_cost =zj -current_c 
+
+                        print (f"\n{var_name } is NON-BASIC (not produced/used) in current solution")
+                        print (f"\nCurrent coefficient: C{var_index +1 } = {current_c }")
+                        print (f"Zj (value if {var_name } enters) = {zj :.4f}")
+                        print (f"Reduced Cost (Zj - Cj) = {reduced_cost :.4f}")
+
+                        if problem ['is_max']:
+                            print ("\n"+"─"*80 )
+                            print ("INTERPRETATION (Maximization):")
+                            print ("─"*80 )
+                            if reduced_cost >1e-6 :
+                                print (f"\n  Zj - Cj = {reduced_cost :.4f} > 0")
+                                print (f"\n  This means introducing {var_name } would DECREASE profit by {reduced_cost :.4f}")
+                                print (f"  per unit. Therefore, it's NOT profitable to produce {var_name }.")
+                                print (f"\n  WHY NOT PRODUCE {var_name }?")
+                                print (f"  → The resources used to make {var_name } are more valuable")
+                                print (f"    when used for the current production mix.")
+                                print (f"  → Opportunity cost of producing {var_name } is too high.")
+
+                                print (f"\n{'='*80 }")
+                                print (f"MINIMUM COEFFICIENT FOR {var_name } TO ENTER SOLUTION")
+                                print ('='*80 )
+                                print (f"\nFor {var_name } to become profitable:")
+                                print (f"  We need: Zj - C{var_index +1 } ≤ 0")
+                                print (f"  Therefore: C{var_index +1 } ≥ Zj")
+                                print (f"  Minimum C{var_index +1 } = {zj :.4f}")
+
+                                improvement =zj -current_c 
+                                print (f"\nCurrent C{var_index +1 } = {current_c :.4f}")
+                                print (f"Required C{var_index +1 } ≥ {zj :.4f}")
+                                print (f"Improvement needed = {improvement :.4f}")
+                                print (f"\nCONCLUSION:")
+                                print (f"  The profit coefficient of {var_name } must increase by at least")
+                                print (f"  {improvement :.4f} (from {current_c :.4f} to {zj :.4f}) to make it")
+                                print (f"  worthwhile to include {var_name } in the production.")
+
+                                print (f"\n{'='*80 }")
+                                print ("PRACTICAL INTERPRETATION")
+                                print ('='*80 )
+                                print (f"\nIf market conditions change and profit for {var_name }")
+                                print (f"increases to at least ${zj :.2f} per unit,")
+                                print (f"then {var_name } should be included in production mix.")
+
+                            elif reduced_cost <-1e-6 :
+                                print (f"\n  Zj - Cj = {reduced_cost :.4f} < 0")
+                                print (f"\n  ERROR: This should not happen in an optimal solution!")
+                                print (f"  The solution may not be optimal.")
+                            else :
+                                print (f"\n  Zj - Cj = {reduced_cost :.4f} ≈ 0")
+                                print (f"\n  {var_name } is at the threshold of entering the solution.")
+                                print (f"  Any increase in C{var_index +1 } would make it profitable.")
+                        else :
+                            print ("\n"+"─"*80 )
+                            print ("INTERPRETATION (Minimization):")
+                            print ("─"*80 )
+                            if reduced_cost >1e-6 :
+                                print (f"\n  Zj - Cj = {reduced_cost :.4f} > 0")
+                                print (f"\n  This means introducing {var_name } would INCREASE cost.")
+                                print (f"  Therefore, it's NOT cost-effective to use {var_name }.")
+
+                                print (f"\n{'='*80 }")
+                                print (f"MAXIMUM COEFFICIENT FOR {var_name } TO ENTER SOLUTION")
+                                print ('='*80 )
+                                print (f"\nFor {var_name } to become cost-effective:")
+                                print (f"  We need: Zj - C{var_index +1 } ≤ 0")
+                                print (f"  Therefore: C{var_index +1 } ≥ Zj")
+
+                                print (f"\nCurrent C{var_index +1 } = {current_c :.4f}")
+                                print (f"Must be at most: {zj :.4f}")
+                                decrease =current_c -zj 
+                                print (f"Decrease needed = {decrease :.4f}")
+                    else :
+                        print ("Invalid selection.")
+
         elif case_choice ==2 :
             table ,basic_vars ,cb =sensitivity_analysis_case2_menu (problem ,table ,basic_vars ,var_names ,cj ,cb )
 
@@ -4661,24 +5311,42 @@ def solve_and_prepare_sensitivity (problem ,var_prefix ='x'):
     print ("SOLVING PROBLEM FOR SENSITIVITY ANALYSIS")
     print ("#"*80 )
 
-    table ,basic_vars ,var_names ,cj ,cb =setup_simplex_table (problem ,var_prefix )
+    all_leq =all (ct ==1 for ct in problem ['constraint_types'])
+    
+    if all_leq :
+        print ("\nDetected all <= constraints. Using standard Simplex Method.")
+        table ,basic_vars ,var_names ,cj ,cb =setup_simplex_table (problem ,var_prefix )
+        M_val =None 
+    else :
+        print ("\nDetected >= or = constraints. Using Big-M Method.")
+        M =10000 
+        table ,basic_vars ,var_names ,cj ,cb ,M_val ,artificial_count =setup_big_m_table (problem ,M ,var_prefix )
+        print (f"Note: M is used as a large penalty value (M = {M })")
 
     iteration =0 
 
     while True :
         num_vars =len (var_names )
         zj =calculate_zj (table ,cb ,num_vars )
-        zj_cj =calculate_zj_cj (zj ,cj ,None )
+        zj_cj =calculate_zj_cj (zj ,cj ,M_val )
 
         if check_optimality (zj_cj ):
             print (f"\n{'='*80 }")
             print (f"ITERATION {iteration }")
             print ('='*80 )
-            zj_final ,zj_cj_final =print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration )
+            zj_final ,zj_cj_final =print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration ,M_val )
 
             if not check_rhs_feasibility (table ):
                 print ("\n[!] Solution is infeasible. Cannot perform sensitivity analysis.")
                 return None ,None ,None ,None ,None ,False 
+            
+            if M_val is not None :
+                artificial_vars =[v for v in var_names if v .startswith ('A')]
+                if check_infeasible (basic_vars ,table ,artificial_vars ):
+                    print ("\n[!] INFEASIBLE SOLUTION!")
+                    print ("Artificial variable(s) in the final basis. Problem has no feasible solution.")
+                    print ("Cannot perform sensitivity analysis on infeasible problems.")
+                    return None ,None ,None ,None ,None ,False 
 
             solution =extract_solution (table ,basic_vars ,var_names ,problem ['is_max'])
             print_solution (solution ,var_names ,zj_final ,problem ['is_max'],problem ['num_vars'])
@@ -4695,7 +5363,7 @@ def solve_and_prepare_sensitivity (problem ,var_prefix ='x'):
         if pivot_col ==-1 :
             break 
 
-        zj ,zj_cj =print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration ,pivot_col =pivot_col )
+        zj ,zj_cj =print_simplex_table (table ,basic_vars ,var_names ,cj ,cb ,iteration ,M_val ,pivot_col )
 
         print (f"\nEntering Variable: {var_names [pivot_col ]} (most negative Zj-Cj = {print_fraction (min_zj_cj )})")
 
@@ -4727,16 +5395,11 @@ def solve_lp_relaxation (problem ,bounds =None ):
     if 'obj_coef'not in prob and 'objective'in prob :
         prob ['obj_coef']=prob ['objective']
 
+    original_num_vars =prob ['num_vars']
+    
     if bounds :
         for var_idx ,(lb ,ub )in bounds .items ():
-            if lb is not None :
-                new_constraint =[0 ]*prob ['num_vars']
-                new_constraint [var_idx ]=1 
-                prob ['constraints'].append (new_constraint )
-                prob ['rhs'].append (lb )
-                prob ['constraint_types'].append (2 )
-                prob ['num_constraints']+=1 
-            if ub is not None :
+            if ub is not None and ub <1 :
                 new_constraint =[0 ]*prob ['num_vars']
                 new_constraint [var_idx ]=1 
                 prob ['constraints'].append (new_constraint )
@@ -4773,13 +5436,22 @@ def solve_lp_relaxation (problem ,bounds =None ):
 
             if check_optimality (zj_cj ):
                 solution ={}
-                for j in range (prob ['num_vars']):
+                for j in range (original_num_vars ):
                     var_name =f"x{j +1 }"
                     if var_name in basic_vars :
                         row =basic_vars .index (var_name )
                         solution [var_name ]=table [row ][-1 ]
                     else :
                         solution [var_name ]=0 
+                
+                if bounds :
+                    for var_idx ,(lb ,ub )in bounds .items ():
+                        var_name =f"x{var_idx +1 }"
+                        if var_name in solution :
+                            if lb is not None and solution [var_name ]<lb -1e-6 :
+                                solution [var_name ]=lb 
+                            if ub is not None and solution [var_name ]>ub +1e-6 :
+                                solution [var_name ]=ub 
 
                 if needs_big_m :
                     for bv in basic_vars :
@@ -4792,12 +5464,44 @@ def solve_lp_relaxation (problem ,bounds =None ):
 
                 return optimal_value ,solution ,True 
 
+            pivot_col =-1 
             if prob ['is_max']:
-                min_val =min (zj_cj )
-                pivot_col =zj_cj .index (min_val )
+                min_val =0 
+                for j in range (len (zj_cj )):
+                    if zj_cj [j ]<min_val :
+                        min_val =zj_cj [j ]
+                        pivot_col =j 
             else :
-                max_val =max (zj_cj )
-                pivot_col =zj_cj .index (max_val )
+                max_val =0 
+                for j in range (len (zj_cj )):
+                    if zj_cj [j ]>max_val :
+                        max_val =zj_cj [j ]
+                        pivot_col =j 
+            
+            if pivot_col ==-1 :
+                solution ={}
+                for j in range (original_num_vars ):
+                    var_name =f"x{j +1 }"
+                    if var_name in basic_vars :
+                        row =basic_vars .index (var_name )
+                        solution [var_name ]=table [row ][-1 ]
+                    else :
+                        solution [var_name ]=0 
+                
+                if bounds :
+                    for var_idx ,(lb ,ub )in bounds .items ():
+                        var_name =f"x{var_idx +1 }"
+                        if var_name in solution :
+                            if lb is not None and solution [var_name ]<lb -1e-6 :
+                                solution [var_name ]=lb 
+                            if ub is not None and solution [var_name ]>ub +1e-6 :
+                                solution [var_name ]=ub 
+
+                optimal_value =sum (cb [i ]*table [i ][-1 ]for i in range (m ))
+                if not prob ['is_max']:
+                    optimal_value =-optimal_value 
+
+                return optimal_value ,solution ,True 
 
             min_ratio =float ('inf')
             pivot_row =-1 
@@ -4892,13 +5596,7 @@ def solve_ilp_branch_and_bound (problem ):
     print ("\n"+"="*80 )
     print ("BRANCH AND BOUND ALGORITHM")
     print ("="*80 )
-    print ("\nSteps:")
-    print ("1. Solve LP relaxation (ignore integer constraints)")
-    print ("2. If solution is integer, we're done")
-    print ("3. Otherwise, pick a non-integer variable to branch")
-    print ("4. Create two subproblems: x <= floor(val) and x >= ceil(val)")
-    print ("5. Use bounds to prune subproblems")
-    print ("6. Repeat until optimal integer solution found")
+   
 
     best_solution =None 
     best_value =float ('-inf')if problem ['is_max']else float ('inf')
@@ -5109,11 +5807,264 @@ def solve_ilp_branch_and_bound (problem ):
 
     return best_solution ,best_value 
 
+def solve_binary_ilp_branch_and_bound (problem ):
+
+    import math 
+
+    print ("\n"+"#"*80 )
+    print ("   BINARY INTEGER PROGRAMMING - BRANCH AND BOUND METHOD")
+    print ("#"*80 )
+
+    BranchAndBoundNode .node_count =0 
+
+    print ("\n"+"="*80 )
+    print ("PROBLEM FORMULATION")
+    print ("="*80 )
+
+    obj_type ="Maximize"if problem ['is_max']else "Minimize"
+    n =problem ['num_vars']
+    m =problem ['num_constraints']
+
+    print (f"\n{obj_type } Z = ",end ="")
+    terms =[f"{problem ['obj_coef'][j ]}x{j +1 }"for j in range (n )if problem ['obj_coef'][j ]!=0 ]
+    print (" + ".join (terms ))
+
+    print ("\nSubject to:")
+    for i in range (m ):
+        terms =[f"{problem ['constraints'][i ][j ]}x{j +1 }"for j in range (n )if problem ['constraints'][i ][j ]!=0 ]
+        constraint_str =" + ".join (terms )if terms else "0"
+
+        ct =problem ['constraint_types'][i ]
+        if ct ==1 :
+            constraint_str +=f" <= {problem ['rhs'][i ]}"
+        elif ct ==2 :
+            constraint_str +=f" = {problem ['rhs'][i ]}"
+        else :
+            constraint_str +=f" >= {problem ['rhs'][i ]}"
+        print (f"  {constraint_str }")
+
+    print (f"\n  x1, x2, ..., x{n } ∈ {{0, 1}} (BINARY)")
+
+    print ("\n"+"="*80 )
+    print ("BRANCH AND BOUND ALGORITHM FOR BINARY VARIABLES")
+    print ("="*80 )
+   
+
+    best_solution =None 
+    best_value =float ('-inf')if problem ['is_max']else float ('inf')
+
+    root =BranchAndBoundNode ({})
+    for i in range (n ):
+        root .bounds [i ]=(0 ,1 )
+    nodes =[root ]
+    all_nodes =[root ]
+
+    iteration =0 
+    max_nodes =100 
+
+    print ("\n"+"="*80 )
+    print ("STEP 1: SOLVE LP RELAXATION (ROOT NODE)")
+    print ("="*80 )
+
+    while nodes and iteration <max_nodes :
+        iteration +=1 
+        current =nodes .pop (0 )
+
+        print (f"\n{'='*80 }")
+        print (f"NODE {current .id }"+(f" (Branch: {current .branch_var } {current .branch_type })"if current .branch_var else " (ROOT)"))
+        print ('='*80 )
+
+        bounds_infeasible =False 
+        if current .bounds :
+            print ("\nBinary variable assignments:")
+            fixed_vars =[]
+            free_vars =[]
+            for var_idx in range (n ):
+                if var_idx in current .bounds :
+                    lb ,ub =current .bounds [var_idx ]
+                    var_name =f"x{var_idx +1 }"
+                    if lb ==1 and ub ==1 :
+                        fixed_vars .append (f"{var_name }=1")
+                    elif lb ==0 and ub ==0 :
+                        fixed_vars .append (f"{var_name }=0")
+                    elif lb ==0 and ub ==1 :
+                        free_vars .append (f"{var_name }∈{{0,1}}")
+                    else :
+                        bounds_infeasible =True 
+
+            if fixed_vars :
+                print (f"  Fixed: {', '.join (fixed_vars )}")
+            if free_vars :
+                print (f"  Free: {', '.join (free_vars )}")
+
+            if bounds_infeasible :
+                current .status ="infeasible"
+                print ("\n  X INFEASIBLE: Invalid binary bounds - Node pruned")
+                continue 
+
+        print ("\nSolving LP relaxation...")
+        opt_val ,solution ,feasible =solve_lp_relaxation (problem ,current .bounds )
+
+        if not feasible or opt_val is None :
+            current .status ="infeasible"
+            print ("\n  X INFEASIBLE or UNBOUNDED - Node pruned")
+            continue 
+
+        current .optimal_value =opt_val 
+        current .solution =solution 
+
+        print (f"\nLP Relaxation Solution:")
+        for var in sorted (solution .keys ()):
+            if var .startswith ('x'):
+                val =solution [var ]
+                if abs (val -0 )<1e-6 or abs (val -1 )<1e-6 :
+                    print (f"  {var } = {int (round (val ))} (binary)")
+                else :
+                    print (f"  {var } = {val :.4f} (fractional)")
+        print (f"\n  Z = {opt_val :.4f}")
+
+        if problem ['is_max']:
+            if opt_val <=best_value :
+                current .status ="pruned"
+                print (f"\n  X PRUNED: Z = {opt_val :.4f} <= Best = {best_value :.4f}")
+                continue 
+        else :
+            if opt_val >=best_value :
+                current .status ="pruned"
+                print (f"\n  X PRUNED: Z = {opt_val :.4f} >= Best = {best_value :.4f}")
+                continue 
+
+        if is_integer_solution (solution ):
+            current .status ="optimal"
+            print ("\n  OK BINARY SOLUTION FOUND!")
+
+            if problem ['is_max']:
+                if opt_val >best_value :
+                    best_value =opt_val 
+                    best_solution =solution .copy ()
+                    print (f"  OK NEW BEST: Z = {best_value :.4f}")
+            else :
+                if opt_val <best_value :
+                    best_value =opt_val 
+                    best_solution =solution .copy ()
+                    print (f"  OK NEW BEST: Z = {best_value :.4f}")
+            continue 
+
+        branch_var ,branch_val =find_branching_variable (solution )
+
+        if branch_var is None :
+            continue 
+
+        var_idx =int (branch_var [1 :])-1 
+
+        print (f"\n  X Fractional: {branch_var } = {branch_val :.4f}")
+        print (f"\n  BRANCHING on {branch_var }:")
+        print (f"    Left branch:  {branch_var } = 0")
+        print (f"    Right branch: {branch_var } = 1")
+
+        current .status ="branched"
+
+        left_bounds =current .bounds .copy ()
+        left_bounds [var_idx ]=(0 ,0 )
+        left_child =BranchAndBoundNode (left_bounds ,current ,branch_var ,"= 0")
+        current .children .append (left_child )
+        all_nodes .append (left_child )
+        nodes .append (left_child )
+
+        right_bounds =current .bounds .copy ()
+        right_bounds [var_idx ]=(1 ,1 )
+        right_child =BranchAndBoundNode (right_bounds ,current ,branch_var ,"= 1")
+        current .children .append (right_child )
+        all_nodes .append (right_child )
+        nodes .append (right_child )
+
+        input ("\n>>> Press Enter to continue to next node...")
+
+    if iteration >=max_nodes :
+        print (f"\n>>> Node limit ({max_nodes }) reached. Stopping search.")
+
+    print ("\n"+"="*80 )
+    print ("BRANCH AND BOUND TREE")
+    print ("="*80 )
+
+    def print_tree (node ,prefix ="",is_last =True ):
+        connector ="+-- "if is_last else "+-- "
+        branch_info =f" ({node .branch_var } {node .branch_type })"if node .branch_var else ""
+        status_sym ={"optimal":"OK","infeasible":"X","pruned":"X","branched":"->","pending":"?"}
+
+        if node .optimal_value is not None :
+            print (f"{prefix }{connector }Node {node .id }{branch_info }: Z={node .optimal_value :.2f} [{status_sym .get (node .status ,'?')} {node .status }]")
+        else :
+            print (f"{prefix }{connector }Node {node .id }{branch_info }: [{status_sym .get (node .status ,'?')} {node .status }]")
+
+        new_prefix =prefix +("    "if is_last else "|   ")
+        for i ,child in enumerate (node .children ):
+            print_tree (child ,new_prefix ,i ==len (node .children )-1 )
+
+    print ()
+    print_tree (root ,"",True )
+
+    print ("\n"+"="*80 )
+    print ("OPTIMAL BINARY SOLUTION")
+    print ("="*80 )
+
+    if best_solution :
+        print ("\nSolution:")
+        for var in sorted (best_solution .keys ()):
+            if var .startswith ('x'):
+                print (f"  {var } = {int (round (best_solution [var ]))}")
+        print (f"\nOptimal Value Z = {best_value :.4f}")
+
+        print ("\n"+"-"*40 )
+        print ("VERIFICATION")
+        print ("-"*40 )
+        obj_val =sum (problem ['obj_coef'][j ]*round (best_solution [f"x{j +1 }"])for j in range (n ))
+        print (f"Z = ",end ="")
+        terms =[f"({problem ['obj_coef'][j ]} x {int (round (best_solution [f'x{j +1 }']))})"for j in range (n )]
+        print (" + ".join (terms ))
+        print (f"Z = {obj_val }")
+
+        print ("\nConstraint Check:")
+        all_satisfied =True 
+        for i in range (m ):
+            lhs =sum (problem ['constraints'][i ][j ]*round (best_solution [f"x{j +1 }"])for j in range (n ))
+            ct =problem ['constraint_types'][i ]
+            rhs =problem ['rhs'][i ]
+
+            if ct ==1 :
+                satisfied =lhs <=rhs +1e-6 
+                op ="<="
+            elif ct ==2 :
+                satisfied =abs (lhs -rhs )<1e-6 
+                op ="="
+            else :
+                satisfied =lhs >=rhs -1e-6 
+                op =">="
+
+            status ="OK"if satisfied else "X VIOLATED"
+            print (f"  Constraint {i +1 }: {lhs :.0f} {op } {rhs } [{status }]")
+            if not satisfied :
+                all_satisfied =False 
+
+        if all_satisfied :
+            print ("\n  ALL CONSTRAINTS SATISFIED")
+        else :
+            print ("\n  WARNING: Some constraints violated!")
+    else :
+        print ("\nNo feasible binary solution found.")
+        print ("The problem may be infeasible or need more nodes to explore.")
+
 def ilp_menu ():
 
     print ("\n"+"="*80 )
     print ("INTEGER LINEAR PROGRAMMING (BRANCH AND BOUND)")
     print ("="*80 )
+
+    print ("\nSelect problem type:")
+    print ("1. General Integer Programming (all variables integer)")
+    print ("2. Binary Integer Programming (all variables ∈ {0, 1})")
+
+    type_choice =get_int_input ("\nEnter choice (1-2): ")
 
     print ("\nInput method:")
     print ("1. Manual Input")
@@ -5132,271 +6083,203 @@ def ilp_menu ():
         print ("Invalid choice.")
         return 
 
-    input ("\nPress Enter to solve using Branch and Bound...")
-    solve_ilp_branch_and_bound (problem )
-
-def solve_tsp_branch_and_bound (dist_matrix ,city_names =None ):
-
-    import copy 
-
-    n =len (dist_matrix )
-    INF =float ('inf')
-
-    if city_names is None :
-        city_names =[str (i +1 )for i in range (n )]
-
-    print ("\n"+"#"*80 )
-    print ("   TRAVELLING SALESMAN PROBLEM - BRANCH AND BOUND")
-    print ("#"*80 )
-
-    print ("\n"+"="*80 )
-    print ("DISTANCE/COST MATRIX")
-    print ("="*80 )
-
-    header ="     "+"".join ([f"{city_names [j ]:>8}"for j in range (n )])
-    print (header )
-    print ("-"*len (header ))
-    for i in range (n ):
-        row_str =f"{city_names [i ]:>4} "
-        for j in range (n ):
-            if dist_matrix [i ][j ]==INF :
-                row_str +=f"{'INF':>8}"
-            else :
-                row_str +=f"{dist_matrix [i ][j ]:>8.2f}"
-        print (row_str )
-
-    print ("\n"+"="*80 )
-    print ("BRANCH AND BOUND METHOD FOR TSP")
-    print ("="*80 )
-    print ("\nSteps:")
-    print ("1. Reduce the matrix (subtract row min, then column min)")
-    print ("2. Calculate lower bound = sum of reductions")
-    print ("3. Branch on edge with maximum regret")
-    print ("4. Create two subproblems: include edge vs exclude edge")
-    print ("5. Prune nodes with bound >= best solution")
-    print ("6. Continue until complete tour found")
-
-    def reduce_matrix (matrix ):
-
-        m =len (matrix )
-        mat =[row [:]for row in matrix ]
-        reduction =0 
-
-        row_mins =[]
-        for i in range (m ):
-            finite_vals =[val for val in mat [i ]if val !=INF ]
-            if finite_vals :
-                row_min =min (finite_vals )
-            else :
-                row_min =0 
-            row_mins .append (row_min )
-            if row_min >0 :
-                for j in range (m ):
-                    if mat [i ][j ]!=INF :
-                        mat [i ][j ]-=row_min 
-                reduction +=row_min 
-
-        col_mins =[]
-        for j in range (m ):
-            finite_vals =[mat [i ][j ]for i in range (m )if mat [i ][j ]!=INF ]
-            if finite_vals :
-                col_min =min (finite_vals )
-            else :
-                col_min =0 
-            col_mins .append (col_min )
-            if col_min >0 :
-                for i in range (m ):
-                    if mat [i ][j ]!=INF :
-                        mat [i ][j ]-=col_min 
-                reduction +=col_min 
-
-        return mat ,reduction ,row_mins ,col_mins 
-
-    def print_matrix_reduction (matrix ,title ,row_mins =None ,col_mins =None ):
-
-        m =len (matrix )
-        print (f"\n{title }")
-
-        header ="     "+"".join ([f"{j +1 :>8}"for j in range (m )])
-        if col_mins :
-            header +="  Row Min"
-        print (header )
-        print ("-"*len (header ))
-
-        for i in range (m ):
-            row_str =f"{i +1 :>4} "
-            for j in range (m ):
-                if matrix [i ][j ]==INF :
-                    row_str +=f"{'INF':>8}"
-                else :
-                    row_str +=f"{matrix [i ][j ]:>8.2f}"
-            if row_mins :
-                row_str +=f"  [{row_mins [i ]:.2f}]"
-            print (row_str )
-
-        if col_mins :
-            col_str ="Min: "
-            for j in range (m ):
-                col_str +=f"[{col_mins [j ]:.2f}]  "
-            print (col_str )
-
-    def calculate_regret (matrix ,i ,j ):
-
-        m =len (matrix )
-        row_vals =[matrix [i ][k ]for k in range (m )if k !=j and matrix [i ][k ]!=INF ]
-        if row_vals :
-            row_min =min (row_vals )
-        else :
-            row_min =0 
-        col_vals =[matrix [k ][j ]for k in range (m )if k !=i and matrix [k ][j ]!=INF ]
-        if col_vals :
-            col_min =min (col_vals )
-        else :
-            col_min =0 
-        return row_min +col_min 
-
-    class TSPNode :
-        node_count =0 
-
-        def __init__ (self ,matrix ,path ,cost ,level ,parent =None ):
-            TSPNode .node_count +=1 
-            self .id =TSPNode .node_count 
-            self .matrix =[row [:]for row in matrix ]
-            self .path =path [:]
-            self .cost =cost 
-            self .level =level 
-            self .parent =parent 
-
-    TSPNode .node_count =0 
-
-    print ("\n"+"="*80 )
-    print ("STEP 1: INITIAL MATRIX REDUCTION")
-    print ("="*80 )
-
-    initial_matrix =[[dist_matrix [i ][j ]if i !=j else INF for j in range (n )]for i in range (n )]
-
-    print_matrix_reduction (initial_matrix ,"Original Matrix (diagonal = INF)")
-
-    reduced_matrix ,initial_reduction ,row_mins ,col_mins =reduce_matrix (initial_matrix )
-
-    print (f"\nRow Minimums: {row_mins }")
-    print (f"Column Minimums: {col_mins }")
-    print (f"\nTotal Reduction = {' + '.join ([f'{r :.2f}'for r in row_mins if r >0 ])} + {' + '.join ([f'{c :.2f}'for c in col_mins if c >0 ])}")
-    print (f"Total Reduction = {initial_reduction :.2f}")
-
-    print_matrix_reduction (reduced_matrix ,"Reduced Matrix")
-
-    print (f"\nLower Bound at Root = {initial_reduction :.2f}")
-
-    root =TSPNode (reduced_matrix ,[0 ],initial_reduction ,0 )
-    nodes =[root ]
-    best_tour =None 
-    best_cost =INF 
-
-    iteration =0 
-
-    while nodes :
-        iteration +=1 
-
-        nodes .sort (key =lambda x :x .cost )
-        current =nodes .pop (0 )
-
-        if current .cost >=best_cost :
-            print (f"\n>>> Node {current .id } pruned: cost {current .cost :.2f} >= best {best_cost :.2f}")
-            continue 
-
-        if current .level ==n -1 :
-            last_city =current .path [-1 ]
-            return_cost =dist_matrix [last_city ][0 ]
-
-            tour =current .path +[0 ]
-            actual_tour_cost =sum (dist_matrix [tour [i ]][tour [i +1 ]]for i in range (len (tour )-1 ))
-
-            if actual_tour_cost <best_cost :
-                best_cost =actual_tour_cost 
-                best_tour =tour 
-                print (f"\n>>> Complete tour found! Actual Cost = {actual_tour_cost :.2f}")
-            continue 
-
-        print (f"\n{'='*80 }")
-        print (f"ITERATION {iteration }: NODE {current .id }")
-        print (f"{'='*80 }")
-        print (f"Current Path: {' -> '.join ([city_names [c ]for c in current .path ])}")
-        print (f"Current Bound: {current .cost :.2f}")
-
-        last_city =current .path [-1 ]
-
-        print (f"\nFinding best city to visit from {city_names [last_city ]}...")
-
-        best_regret =-1 
-        best_next =-1 
-
-        for j in range (n ):
-            if j not in current .path and current .matrix [last_city ][j ]!=INF :
-                regret =calculate_regret (current .matrix ,last_city ,j )
-                print (f"  City {city_names [j ]}: cost = {current .matrix [last_city ][j ]:.2f}, regret = {regret :.2f}")
-
-                if regret >best_regret or best_next ==-1 :
-                    best_regret =regret 
-                    best_next =j 
-
-        if best_next ==-1 :
-            continue 
-
-        print (f"\nBranching to city {city_names [best_next ]}")
-
-        new_matrix =[row [:]for row in current .matrix ]
-
-        for k in range (n ):
-            new_matrix [last_city ][k ]=INF 
-            new_matrix [k ][best_next ]=INF 
-
-        new_matrix [best_next ][0 ]=INF 
-
-        reduced_new ,reduction ,_ ,_ =reduce_matrix (new_matrix )
-        new_cost =current .cost +current .matrix [last_city ][best_next ]+reduction 
-
-        print (f"Edge cost: {current .matrix [last_city ][best_next ]:.2f}")
-        print (f"Additional reduction: {reduction :.2f}")
-        print (f"New bound: {new_cost :.2f}")
-
-        new_path =current .path +[best_next ]
-        child =TSPNode (reduced_new ,new_path ,new_cost ,current .level +1 ,current )
-
-        if new_cost <best_cost :
-            nodes .append (child )
-        else :
-            print (f"  Node pruned (bound >= best)")
-
-        input ("\n>>> Press Enter to continue...")
-
-    print ("\n"+"="*80 )
-    print ("OPTIMAL TOUR")
-    print ("="*80 )
-
-    if best_tour :
-        actual_cost =0 
-        for i in range (len (best_tour )-1 ):
-            actual_cost +=dist_matrix [best_tour [i ]][best_tour [i +1 ]]
-
-        print ("\nTour: ",end ="")
-        print (" -> ".join ([city_names [c ]for c in best_tour ]))
-        print (f"\nOptimal Cost = {actual_cost :.2f}")
-
-        print ("\n"+"-"*40 )
-        print ("TOUR BREAKDOWN")
-        print ("-"*40 )
-        for i in range (len (best_tour )-1 ):
-            from_city =best_tour [i ]
-            to_city =best_tour [i +1 ]
-            cost =dist_matrix [from_city ][to_city ]
-            print (f"  {city_names [from_city ]} -> {city_names [to_city ]}: {cost :.2f}")
-        print (f"  {'='*30 }")
-        print (f"  Total: {actual_cost :.2f}")
+    if type_choice ==1 :
+        input ("\nPress Enter to solve using Branch and Bound (General Integer)...")
+        solve_ilp_branch_and_bound (problem )
+    elif type_choice ==2 :
+        input ("\nPress Enter to solve using Branch and Bound (Binary)...")
+        solve_binary_ilp_branch_and_bound (problem )
     else :
-        print ("\nNo feasible tour found.")
+        print ("Invalid problem type.")
+        return
 
-    return best_tour ,best_cost 
+def solve_tsp_branch_and_bound (dist_matrix ,city_names =None, silent=False ):
+
+    # Branch-and-bound implementation (restored, step-by-step)
+    import copy
+    n = len(dist_matrix)
+    INF = float('inf')
+    if city_names is None:
+        city_names = [str(i+1) for i in range(n)]
+    def silent_print(*args, **kwargs):
+        pass
+    def _print(*args, **kwargs):
+        if not silent_mode:
+            print(*args, **kwargs)
+    silent_mode = False
+    # Support silent mode for verification
+    if 'silent' in locals() or 'silent' in globals():
+        silent_mode = locals().get('silent', False)
+    def branch_and_bound():
+        best_cost = INF
+        best_tour = None
+        def dfs(path, visited, cost):
+            nonlocal best_cost, best_tour
+            u = path[-1]
+            if not silent:
+                print(f"Exploring path: {' -> '.join(city_names[i] for i in path)} | Cost so far: {cost:.2f}")
+            if len(path) == n:
+                total = cost + dist_matrix[u][path[0]]
+                if not silent:
+                    print(f"  Complete tour: {' -> '.join(city_names[i] for i in path+[path[0]])} | Total cost: {total:.2f}")
+                if total < best_cost:
+                    best_cost = total
+                    best_tour = path[:]+[path[0]]
+                    if not silent:
+                        print(f"  New best tour found! Cost = {best_cost:.2f}")
+                return
+            for v in range(n):
+                if v not in visited and dist_matrix[u][v] != INF:
+                    next_cost = cost + dist_matrix[u][v]
+                    if next_cost >= best_cost:
+                        if not silent:
+                            print(f"  Pruned path: {' -> '.join(city_names[i] for i in path+[v])} | Cost {next_cost:.2f} >= Best {best_cost:.2f}")
+                        continue
+                    dfs(path+[v], visited|{v}, next_cost)
+        dfs([0], {0}, 0.0)
+        return best_tour, best_cost
+    # Print matrix and info
+    _print("\n"+"#"*80)
+    _print("   TRAVELLING SALESMAN PROBLEM - BRANCH AND BOUND")
+    _print("#"*80)
+    _print("\n"+"="*80)
+    _print("DISTANCE/COST MATRIX")
+    _print("="*80)
+    header = "     " + "".join([f"{city_names[j]:>8}" for j in range(n)])
+    _print(header)
+    _print("-"*len(header))
+    for i in range(n):
+        row_str = f"{city_names[i]:>4} "
+        for j in range(n):
+            if dist_matrix[i][j] == INF:
+                row_str += f"{'INF':>8}"
+            else:
+                row_str += f"{dist_matrix[i][j]:>8.2f}"
+        _print(row_str)
+    _print("\n"+"="*80)
+    _print("BRANCH AND BOUND (ALL TOURS)")
+    _print("="*80)
+   
+    tour, cost = branch_and_bound()
+    if tour is None or cost == INF:
+        _print("\nNo feasible tour found.")
+        return None, INF
+    _print("\n"+"="*80)
+    _print("OPTIMAL TOUR FOUND")
+    _print("="*80)
+    _print("\nTour: ", end="")
+    _print(" -> ".join([city_names[c] for c in tour]))
+    _print(f"\nOptimal Cost = {cost:.2f}")
+    _print("\n"+"-"*40)
+    _print("TOUR BREAKDOWN")
+    _print("-"*40)
+    for i in range(len(tour)-1):
+        from_city = tour[i]
+        to_city = tour[i+1]
+        edge_cost = dist_matrix[from_city][to_city]
+        _print(f"  {city_names[from_city]} -> {city_names[to_city]}: {edge_cost:.2f}")
+    _print(f"  {'='*30}")
+    _print(f"  Total: {cost:.2f}")
+    return tour, cost
+
+def solve_tsp_held_karp(dist_matrix, city_names=None):
+    n = len(dist_matrix)
+    INF = float('inf')
+    if city_names is None:
+        city_names = [str(i+1) for i in range(n)]
+    print("\n"+"#"*80)
+    print("   TRAVELLING SALESMAN PROBLEM - HELD-KARP ALGORITHM")
+    print("#"*80)
+    print("\n"+"="*80)
+    print("DISTANCE/COST MATRIX")
+    print("="*80)
+    header = "     " + "".join([f"{city_names[j]:>8}" for j in range(n)])
+    print(header)
+    print("-"*len(header))
+    for i in range(n):
+        row_str = f"{city_names[i]:>4} "
+        for j in range(n):
+            if dist_matrix[i][j] == INF:
+                row_str += f"{'INF':>8}"
+            else:
+                row_str += f"{dist_matrix[i][j]:>8.2f}"
+        print(row_str)
+    print("\n"+"="*80)
+    print("HELD-KARP DYNAMIC PROGRAMMING ALGORITHM")
+    print("="*80)
+    
+    print("SOLVING TSP USING DYNAMIC PROGRAMMING...")
+    print("="*80)
+    full = (1 << n) - 1
+    dp = [[INF] * n for _ in range(1 << n)]
+    parent = [[-1] * n for _ in range(1 << n)]
+    dp[1 << 0][0] = 0.0
+    for mask in range(1 << n):
+        for u in range(n):
+            if not (mask & (1 << u)):
+                continue
+            du = dp[mask][u]
+            if du == INF:
+                continue
+            for v in range(n):
+                if mask & (1 << v):
+                    continue
+                w = dist_matrix[u][v]
+                if w == INF:
+                    continue
+                nm = mask | (1 << v)
+                nd = du + w
+                if nd < dp[nm][v]:
+                    dp[nm][v] = nd
+                    parent[nm][v] = u
+    best = INF
+    last = -1
+    for u in range(n):
+        if dp[full][u] == INF:
+            continue
+        back = dist_matrix[u][0]
+        if back == INF:
+            continue
+        cost = dp[full][u] + back
+        if cost < best:
+            best = cost
+            last = u
+    if best == INF:
+        print("\n"+"="*80)
+        print("NO FEASIBLE TOUR FOUND")
+        print("="*80)
+        print("\nNo complete tour exists for this distance matrix.")
+        return None, INF
+    path = []
+    mask = full
+    cur = last
+    while cur != -1:
+        path.append(cur)
+        prev = parent[mask][cur]
+        mask ^= (1 << cur)
+        cur = prev
+    path.reverse()
+    tour = path + [0]
+    print("\n"+"="*80)
+    print("OPTIMAL TOUR FOUND")
+    print("="*80)
+    actual_cost = 0.0
+    for i in range(len(tour)-1):
+        actual_cost += dist_matrix[tour[i]][tour[i+1]]
+    print("\nTour: ", end="")
+    print(" -> ".join([city_names[c] for c in tour]))
+    print(f"\nOptimal Cost = {actual_cost:.2f}")
+    print("\n"+"-"*40)
+    print("TOUR BREAKDOWN")
+    print("-"*40)
+    for i in range(len(tour)-1):
+        from_city = tour[i]
+        to_city = tour[i+1]
+        cost = dist_matrix[from_city][to_city]
+        print(f"  {city_names[from_city]} -> {city_names[to_city]}: {cost:.2f}")
+    print(f"  {'='*30}")
+    print(f"  Total: {actual_cost:.2f}")
+    return tour, actual_cost
 
 def parse_distance_matrix (filename ):
 
@@ -5506,8 +6389,32 @@ def tsp_menu ():
         print ("Invalid choice.")
         return 
 
-    input ("\nPress Enter to solve TSP...")
-    solve_tsp_branch_and_bound (dist_matrix ,city_names )
+    print ("\nSelect TSP solving method:")
+    print ("1. Held-Karp (Dynamic Programming, exact)")
+    print ("2. Branch and Bound (exact, step-by-step)")
+    method_choice = get_int_input("Enter choice (1-2): ")
+
+    if method_choice == 1:
+        input("\nPress Enter to solve TSP with Held-Karp...")
+        tour1, cost1 = solve_tsp_held_karp(dist_matrix, city_names)
+        print("\n[Verification] Now solving with Branch and Bound...")
+        tour2, cost2 = solve_tsp_branch_and_bound(dist_matrix, city_names, silent=True)
+        if abs(cost1 - cost2) > 1e-6:
+            print(f"\n[WARNING] Held-Karp and Branch-and-Bound results differ!\nHeld-Karp: {cost1:.2f}, Branch-and-Bound: {cost2:.2f}")
+        else:
+            print(f"\n[OK] Both methods agree: Cost = {cost1:.2f}")
+    elif method_choice == 2:
+        input("\nPress Enter to solve TSP with Branch and Bound (step-by-step)...")
+        tour2, cost2 = solve_tsp_branch_and_bound(dist_matrix, city_names, silent=False)
+        print("\n[Verification] Now solving with Held-Karp...")
+        tour1, cost1 = solve_tsp_held_karp(dist_matrix, city_names)
+        if abs(cost1 - cost2) > 1e-6:
+            print(f"\n[WARNING] Branch-and-Bound and Held-Karp results differ!\nBranch-and-Bound: {cost2:.2f}, Held-Karp: {cost1:.2f}")
+        else:
+            print(f"\n[OK] Both methods agree: Cost = {cost1:.2f}")
+    else:
+        print("Invalid choice.")
+        return
 
 def solve_01_knapsack (weights ,values ,capacity ,item_names =None ):
 
@@ -5724,6 +6631,131 @@ def solve_unbounded_knapsack (weights ,values ,capacity ,item_names =None ):
 
     return total_value ,item_counts 
 
+def solve_bounded_knapsack (weights ,values ,bounds ,capacity ,item_names =None ):
+
+    n =len (weights )
+
+    if item_names is None :
+        item_names =[f"Item {i +1 }"for i in range (n )]
+
+    print ("\n"+"#"*80 )
+    print ("   BOUNDED KNAPSACK - DYNAMIC PROGRAMMING")
+    print ("#"*80 )
+
+    print ("\n"+"="*80 )
+    print ("PROBLEM DATA")
+    print ("="*80 )
+    print (f"\nKnapsack Capacity: {capacity }")
+    print (f"\nItems (with quantity bounds):")
+    print (f"{'Item':<15} {'Weight':<10} {'Value':<10} {'Max Qty':<10} {'Value/Weight':<12}")
+    print ("-"*57 )
+    for i in range (n ):
+        ratio =values [i ]/weights [i ]if weights [i ]>0 else float ('inf')
+        print (f"{item_names [i ]:<15} {weights [i ]:<10} {values [i ]:<10} {bounds [i ]:<10} {ratio :<12.2f}")
+
+    print ("\n"+"="*80 )
+    print ("DYNAMIC PROGRAMMING APPROACH")
+    print ("="*80 )
+    print ("\nRecurrence Relation:")
+    print ("  V[i][w] = max(V[i-1][w-k*wi] + k*vi) for k = 0 to min(bi, floor(w/wi))")
+    print ("\nWhere:")
+    print ("  V[i][w] = max value using items 1..i with capacity w")
+    print ("  bi = bound (max quantity) for item i")
+    print ("  wi = weight of item i")
+    print ("  vi = value of item i")
+
+    V =[[0 for _ in range (capacity +1 )]for _ in range (n +1 )]
+    item_qty =[[{} for _ in range (capacity +1 )]for _ in range (n +1 )]
+
+    print ("\n"+"="*80 )
+    print ("BUILDING DP TABLE")
+    print ("="*80 )
+
+    for i in range (1 ,n +1 ):
+        item_idx =i -1 
+        wi =weights [item_idx ]
+        vi =values [item_idx ]
+        bi =bounds [item_idx ]
+
+        print (f"\n{'-'*60 }")
+        print (f"Processing {item_names [item_idx ]} (weight={wi }, value={vi }, max_qty={bi })")
+        print (f"{'-'*60 }")
+
+        for w in range (capacity +1 ):
+            best_value =V [i -1 ][w ]
+            best_k =0 
+
+            max_k =min (bi ,w //wi if wi >0 else 0 )
+
+            for k in range (max_k +1 ):
+                if k *wi <=w :
+                    value =V [i -1 ][w -k *wi ]+k *vi 
+                    if value >best_value :
+                        best_value =value 
+                        best_k =k 
+
+            V [i ][w ]=best_value 
+            if best_k >0 :
+                item_qty [i ][w ]=item_qty [i -1 ][w -best_k *wi ].copy ()
+                item_qty [i ][w ][item_idx ]=item_qty [i ][w ].get (item_idx ,0 )+best_k 
+            else :
+                item_qty [i ][w ]=item_qty [i -1 ][w ].copy ()
+
+            if w <=10 or w ==capacity :
+                if best_k >0 :
+                    print (f"  V[{i }][{w }] = {best_value } (taking {best_k } of {item_names [item_idx ]})")
+                else :
+                    print (f"  V[{i }][{w }] = {best_value } (not taking {item_names [item_idx ]})")
+
+    print ("\n"+"="*80 )
+    print ("DP TABLE V[i][w]")
+    print ("="*80 )
+
+    header ="Item\\Cap "
+    cols_to_show =list (range (min (11 ,capacity +1 )))
+    if capacity >10 :
+        cols_to_show .append (capacity )
+
+    for w in cols_to_show :
+        header +=f"{w :>6}"
+    print (header )
+    print ("-"*len (header ))
+
+    for i in range (n +1 ):
+        if i ==0 :
+            row_str =f"{'None':<9}"
+        else :
+            row_str =f"{item_names [i -1 ][:8 ]:<9}"
+
+        for w in cols_to_show :
+            row_str +=f"{V [i ][w ]:>6}"
+        print (row_str )
+
+    selected_items =item_qty [n ][capacity ]
+
+    print ("\n"+"="*80 )
+    print ("OPTIMAL SOLUTION")
+    print ("="*80 )
+
+    total_weight =sum (selected_items .get (i ,0 )*weights [i ]for i in range (n ))
+    total_value =V [n ][capacity ]
+
+    print (f"\nSelected Items:")
+    print (f"{'Item':<15} {'Quantity':<10} {'Weight':<10} {'Value':<10}")
+    print ("-"*45 )
+    for i in sorted (selected_items .keys ()):
+        qty =selected_items [i ]
+        w =qty *weights [i ]
+        v =qty *values [i ]
+        print (f"{item_names [i ]:<15} {qty :<10} {w :<10} {v :<10}")
+    print ("-"*45 )
+    print (f"{'TOTAL':<15} {'':<10} {total_weight :<10} {total_value :<10}")
+
+    print (f"\nMaximum Value = {total_value }")
+    print (f"Total Weight = {total_weight } (Capacity = {capacity })")
+
+    return total_value ,selected_items 
+
 def parse_knapsack_problem (filename ='problem.txt'):
 
     try :
@@ -5738,6 +6770,7 @@ def parse_knapsack_problem (filename ='problem.txt'):
 
         weights =[]
         values =[]
+        bounds =[]
         item_names =[]
 
         for i ,line in enumerate (lines [1 :],start =1 ):
@@ -5745,11 +6778,25 @@ def parse_knapsack_problem (filename ='problem.txt'):
             if len (parts )==2 :
                 weights .append (int (parts [0 ]))
                 values .append (int (parts [1 ]))
+                bounds .append (1 )
                 item_names .append (f"Item {i }")
             elif len (parts )==3 :
+                try :
+                    bound =int (parts [2 ])
+                    weights .append (int (parts [0 ]))
+                    values .append (int (parts [1 ]))
+                    bounds .append (bound )
+                    item_names .append (f"Item {i }")
+                except ValueError :
+                    weights .append (int (parts [0 ]))
+                    values .append (int (parts [1 ]))
+                    bounds .append (1 )
+                    item_names .append (parts [2 ])
+            elif len (parts )==4 :
                 weights .append (int (parts [0 ]))
                 values .append (int (parts [1 ]))
-                item_names .append (parts [2 ])
+                bounds .append (int (parts [2 ]))
+                item_names .append (parts [3 ])
             else :
                 print (f"Error: Invalid format on line {i +1 }: {line }")
                 return None 
@@ -5762,6 +6809,7 @@ def parse_knapsack_problem (filename ='problem.txt'):
             'capacity':capacity ,
             'weights':weights ,
             'values':values ,
+            'bounds':bounds ,
             'item_names':item_names ,
             'n':len (weights )
         }
@@ -5785,8 +6833,9 @@ def knapsack_menu ():
     print ("\nSelect type:")
     print ("1. 0/1 Knapsack (Dynamic Programming)")
     print ("2. Unbounded Knapsack (Dynamic Programming)")
+    print ("3. Bounded Knapsack (Dynamic Programming)")
 
-    type_choice =get_int_input ("\nEnter choice (1-2): ")
+    type_choice =get_int_input ("\nEnter choice (1-3): ")
 
     print ("\nInput method:")
     print ("1. Manual Input")
@@ -5800,6 +6849,7 @@ def knapsack_menu ():
 
         weights =[]
         values =[]
+        bounds =[]
         item_names =[]
 
         for i in range (n ):
@@ -5807,6 +6857,8 @@ def knapsack_menu ():
             item_names .append (name if name else f"Item {i +1 }")
             weights .append (get_int_input (f"  Weight of {item_names [i ]}: "))
             values .append (get_int_input (f"  Value of {item_names [i ]}: "))
+            if type_choice ==3 :
+                bounds .append (get_int_input (f"  Max quantity of {item_names [i ]}: "))
 
     elif input_choice ==2 :
         print ("\nLoading knapsack problem from 'problem.txt'...")
@@ -5815,8 +6867,13 @@ def knapsack_menu ():
             print ("Failed to load problem from file.")
             print ("\nExpected format:")
             print ("  Line 1: Capacity")
-            print ("  Line 2+: Weight Value [ItemName]")
-            print ("\nExample:")
+            print ("  Line 2+: Weight Value [Bound] [ItemName]")
+            print ("\nExample (bounded):")
+            print ("  50")
+            print ("  10 60 3 Item1")
+            print ("  20 100 2 Item2")
+            print ("  30 120 1 Item3")
+            print ("\nExample (0/1 or unbounded):")
             print ("  50")
             print ("  10 60 Item1")
             print ("  20 100 Item2")
@@ -5826,13 +6883,17 @@ def knapsack_menu ():
         capacity =problem ['capacity']
         weights =problem ['weights']
         values =problem ['values']
+        bounds =problem ['bounds']
         item_names =problem ['item_names']
         n =problem ['n']
 
         print (f"\nLoaded {n } items with capacity {capacity }")
         print ("\nItems loaded:")
         for i in range (n ):
-            print (f"  {item_names [i ]}: Weight={weights [i ]}, Value={values [i ]}")
+            if type_choice ==3 :
+                print (f"  {item_names [i ]}: Weight={weights [i ]}, Value={values [i ]}, Max Qty={bounds [i ]}")
+            else :
+                print (f"  {item_names [i ]}: Weight={weights [i ]}, Value={values [i ]}")
 
     else :
         print ("Invalid choice.")
@@ -5844,6 +6905,8 @@ def knapsack_menu ():
         solve_01_knapsack (weights ,values ,capacity ,item_names )
     elif type_choice ==2 :
         solve_unbounded_knapsack (weights ,values ,capacity ,item_names )
+    elif type_choice ==3 :
+        solve_bounded_knapsack (weights ,values ,bounds ,capacity ,item_names )
     else :
         print ("Invalid knapsack type.")
 
@@ -6308,42 +7371,40 @@ def main ():
         print ("MAIN MENU")
         print ("-"*50 )
         print ("\n--- LINEAR PROGRAMMING ---")
-        print ("1.  Simplex Method (Manual Input)")
-        print ("2.  Big M Method (Manual Input)")
+        print ("1.  Load from File & Auto-Solve")
+        print ("2.  Continue from Table (Simplex)")
         print ("3.  Dual Simplex Method")
-        print ("4.  Auto-Detect Method (Manual Input)")
-        print ("5.  Load from File (problem.txt)")
-        print ("6.  Primal to Dual Conversion")
-        print ("7.  Simplex with Matrix Method")
+        print ("4.  Primal to Dual Conversion")
+        print ("5.  Simplex with Matrix Method")
 
         print ("\n--- ASSIGNMENT & TRANSPORTATION ---")
-        print ("8.  Assignment Problem (Hungarian Method)")
-        print ("9.  Transportation Problem (MODI Method)")
+        print ("6.  Assignment Problem (Hungarian Method)")
+        print ("7.  Transportation Problem (MODI Method)")
 
         print ("\n--- SENSITIVITY ANALYSIS ---")
-        print ("10. Sensitivity Analysis (Cases 1-5)")
+        print ("8. Sensitivity Analysis (Cases 1-5)")
 
         print ("\n--- INTEGER & COMBINATORIAL ---")
-        print ("11. Integer Linear Programming (Branch & Bound)")
-        print ("12. Travelling Salesman Problem (TSP)")
-        print ("13. Knapsack Problem (0/1 & Unbounded)")
-        print ("14. Shortest Path Problems (Dijkstra/Grid)")
+        print ("9. Integer Linear Programming (Branch & Bound)")
+        print ("10. Travelling Salesman Problem (TSP)")
+        print ("11. Knapsack Problem (0/1 & Unbounded)")
+        print ("12. Shortest Path Problems (Dijkstra/Grid)")
 
         print ("\n--- EXIT ---")
-        print ("15. Exit")
+        print ("13. Exit")
         print ("-"*50 )
 
-        choice =get_int_input ("Enter your choice (1-15): ")
+        choice =get_int_input ("Enter your choice (1-13): ")
 
-        if choice ==15 :
+        if choice ==13 :
             print ("\nThank you for using OR Exam Helper. Good luck!")
             break 
 
-        if choice not in range (1 ,15 ):
+        if choice not in range (1 ,14 ):
             print ("Invalid choice. Please try again.")
             continue 
 
-        if choice ==11 :
+        if choice ==9 :
             ilp_menu ()
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
@@ -6352,7 +7413,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==12 :
+        if choice ==10 :
             tsp_menu ()
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
@@ -6361,7 +7422,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==13 :
+        if choice ==11 :
             knapsack_menu ()
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
@@ -6370,7 +7431,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==14 :
+        if choice ==12 :
             min_cost_path_menu ()
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
@@ -6379,18 +7440,23 @@ def main ():
                 break 
             continue 
 
-        if choice ==10 :
+        if choice ==8 :
             print ("\n"+"="*80 )
             print ("SENSITIVITY ANALYSIS")
             print ("="*80 )
-            print ("\nThis requires solving an LP problem first.")
-            print ("1. Manual Input")
-            print ("2. Load from File (problem.txt)")
+            print ("\nInput method:")
+            print ("1. Manual Input (Equations)")
+            print ("2. Load Problem from File (problem.txt)")
+            print ("3. Input Optimal Table Manually")
+            print ("4. Load Optimal Table from File (Detailed Format)")
+            print ("5. Load Optimal Table from File (Simple Table Format)")
 
-            sa_choice =get_int_input ("\nEnter choice (1-2): ")
+            sa_choice =get_int_input ("\nEnter choice (1-5): ")
 
             if sa_choice ==1 :
                 problem =input_problem ()
+                print ("\nSolving problem to get optimal table...")
+                table ,basic_vars ,var_names ,cj ,cb ,is_optimal =solve_and_prepare_sensitivity (problem )
             elif sa_choice ==2 :
                 print ("\nLoading problem from 'problem.txt'...")
                 problem =read_problem_from_file ('problem.txt')
@@ -6398,11 +7464,40 @@ def main ():
                     print ("Failed to load problem from file.")
                     continue 
                 print ("Problem loaded successfully!")
+                table ,basic_vars ,var_names ,cj ,cb ,is_optimal =solve_and_prepare_sensitivity (problem )
+            elif sa_choice ==3 :
+                result =input_optimal_table ()
+                if result is None :
+                    print ("Table input cancelled.")
+                    continue 
+                problem ,table ,basic_vars ,var_names ,cj ,cb =result 
+                is_optimal =True 
+                print ("\nOptimal table loaded successfully!")
+            elif sa_choice ==4 :
+                filename =input ("\nEnter filename (or press Enter for 'optimal_table.txt'): ").strip ()
+                if not filename :
+                    filename ='optimal_table.txt'
+                result =read_optimal_table_from_file (filename )
+                if result is None :
+                    print ("Table loading failed.")
+                    continue 
+                problem ,table ,basic_vars ,var_names ,cj ,cb =result 
+                is_optimal =True 
+                print ("\nOptimal table loaded successfully from file!")
+            elif sa_choice ==5 :
+                filename =input ("\nEnter filename (or press Enter for 'table.txt'): ").strip ()
+                if not filename :
+                    filename ='table.txt'
+                result =read_table_simple_format (filename )
+                if result is None :
+                    print ("Table loading failed.")
+                    continue 
+                problem ,table ,basic_vars ,var_names ,cj ,cb ,usage_choice =result 
+                is_optimal =True 
+                print ("\nOptimal table loaded successfully from file (Simple Format)!")
             else :
                 print ("Invalid choice.")
                 continue 
-
-            table ,basic_vars ,var_names ,cj ,cb ,is_optimal =solve_and_prepare_sensitivity (problem )
 
             if is_optimal :
                 result =sensitivity_analysis_menu (problem ,table ,basic_vars ,var_names ,cj ,cb ,is_optimal )
@@ -6415,7 +7510,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==9 :
+        if choice ==7 :
             solve_transportation_problem ()
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
@@ -6424,7 +7519,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==8 :
+        if choice ==6 :
             solve_hungarian_method ()
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
@@ -6437,12 +7532,23 @@ def main ():
             print ("\n"+"="*80 )
             print ("DUAL SIMPLEX METHOD")
             print ("="*80 )
-            print ("\n1. Manual Input")
-            print ("2. Load from File (problem.txt)")
-            ds_choice =get_int_input ("Enter choice (1-2): ")
+            print ("\n1. Manual Input (LP Problem)")
+            print ("2. Load LP Problem from File (problem.txt)")
+            print ("3. Load Table from File (problem.txt)")
+            ds_choice =get_int_input ("Enter choice (1-3): ")
 
             if ds_choice ==1 :
                 problem =input_problem ()
+                
+                print_problem_summary (problem )
+
+            
+                confirm =input ("\nContinue with Dual Simplex? (y/n): ").lower ()
+                if confirm !='y':
+                    continue 
+
+                solve_dual_simplex (problem )
+                
             elif ds_choice ==2 :
                 print ("\nLoading problem from 'problem.txt'...")
                 problem =read_problem_from_file ('problem.txt')
@@ -6450,22 +7556,45 @@ def main ():
                     print ("Failed to load problem from file.")
                     continue 
                 print ("Problem loaded successfully!")
+                
+                print_problem_summary (problem )
+
+              
+                confirm =input ("\nContinue with Dual Simplex? (y/n): ").lower ()
+                if confirm !='y':
+                    continue 
+
+                solve_dual_simplex (problem )
+                
+            elif ds_choice ==3 :
+                print ("\nLoading table from 'problem.txt'...")
+                result =read_dual_simplex_table ('problem.txt')
+                if result is None :
+                    print ("Table loading failed.")
+                    continue 
+                    
+                problem ,table ,basic_vars ,var_names ,cj ,cb =result 
+                
+               
+                has_negative_rhs =any (table [i ][-1 ]<0 for i in range (len (table )))
+                if not has_negative_rhs :
+                    print ("\n[!] WARNING: No negative RHS values detected in the table.")
+                    print ("    Dual Simplex is typically used when RHS has negative values.")
+                    confirm =input ("\nContinue anyway? (y/n): ").lower ()
+                    if confirm !='y':
+                        continue 
+                
+                print ("\nContinuing with Dual Simplex Method from given table...")
+                optimal_value =continue_dual_simplex_from_table (table ,basic_vars ,var_names ,cj ,cb ,problem )
+                
+                if optimal_value is not None :
+                    print (f"\nOptimal solution found with Z = {optimal_value }")
+                else :
+                    print ("\nCould not find optimal solution.")
+                    
             else :
                 print ("Invalid choice.")
-                continue 
-
-            print_problem_summary (problem )
-
-            print ("\n[!] NOTE: Dual Simplex is used when:")
-            print ("  - All Zj-Cj >= 0 (optimal indicators)")
-            print ("  - But some RHS < 0 (infeasible solution)")
-            print ("  - Common with >= constraints converted to standard form")
-
-            confirm =input ("\nContinue with Dual Simplex? (y/n): ").lower ()
-            if confirm !='y':
-                continue 
-
-            solve_dual_simplex (problem )
+                continue
 
             another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
             if another !='y':
@@ -6473,7 +7602,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==6 :
+        if choice ==4 :
             print ("\n"+"="*80 )
             print ("PRIMAL TO DUAL CONVERSION")
             print ("="*80 )
@@ -6504,7 +7633,7 @@ def main ():
                 break 
             continue 
 
-        if choice ==7 :
+        if choice ==5 :
             print ("\n"+"="*80 )
             print ("SIMPLEX WITH MATRIX METHOD")
             print ("="*80 )
@@ -6527,10 +7656,7 @@ def main ():
 
             print_problem_summary (problem )
 
-            if any (ct !=1 for ct in problem ['constraint_types']):
-                print ("\n[!] NOTE: Matrix method works best with standard form (all <= constraints).")
-                print ("The problem will be converted to standard form automatically.")
-
+            
             input ("\nPress Enter to solve using Matrix Method...")
             solve_simplex_matrix_method (problem )
 
@@ -6540,39 +7666,79 @@ def main ():
                 break 
             continue 
 
-        if choice ==5 :
+        if choice ==2 :
+            print ("\n"+"="*80 )
+            print ("CONTINUE FROM TABLE (SIMPLEX)")
+            print ("="*80 )
+            print ("\n1. Manual Input")
+            print ("2. Load from File (Detailed Format)")
+            print ("3. Load from File (Simple Table Format)")
+            
+            input_method =get_int_input ("\nEnter choice (1-3): ")
+            
+            if input_method ==1 :
+                result =input_simplex_table_for_continuation ()
+                if result is None :
+                    print ("Table input cancelled.")
+                    continue 
+                problem ,table ,basic_vars ,var_names ,cj ,cb =result 
+            elif input_method ==2 :
+                filename =input ("\nEnter filename (or press Enter for 'table.txt'): ").strip ()
+                if not filename :
+                    filename ='table.txt'
+                result =read_simplex_table_from_file (filename )
+                if result is None :
+                    print ("Table loading failed.")
+                    continue 
+                problem ,table ,basic_vars ,var_names ,cj ,cb =result 
+            elif input_method ==3 :
+                filename =input ("\nEnter filename (or press Enter for 'table.txt'): ").strip ()
+                if not filename :
+                    filename ='table.txt'
+                result =read_table_simple_format (filename )
+                if result is None :
+                    print ("Table loading failed.")
+                    continue 
+                problem ,table ,basic_vars ,var_names ,cj ,cb ,usage_choice =result 
+                if usage_choice ==2 :
+                    print ("\nThis table will be used for sensitivity analysis.")
+                    is_optimal =True 
+                    result =sensitivity_analysis_menu (problem ,table ,basic_vars ,var_names ,cj ,cb ,is_optimal )
+                    another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
+                    if another !='y':
+                        print ("\nThank you for using OR Exam Helper. Good luck!")
+                        break 
+                    continue 
+            else :
+                print ("Invalid choice.")
+                continue 
+            
+            print ("\nContinuing simplex method from given table...")
+            optimal_value ,final_table ,final_basic_vars ,final_var_names ,final_cj ,final_cb =continue_simplex_from_table (
+                table ,basic_vars ,var_names ,cj ,cb ,problem ,start_iteration =1 )
+            
+            if optimal_value is not None :
+                print (f"\nOptimal solution found with Z = {optimal_value }")
+            else :
+                print ("\nCould not find optimal solution.")
+            
+            another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
+            if another !='y':
+                print ("\nThank you for using OR Exam Helper. Good luck!")
+                break 
+            continue 
+
+        if choice ==1 :
             print ("\nLoading problem from 'problem.txt'...")
             problem =read_problem_from_file ('problem.txt')
             if problem is None :
                 print ("Failed to load problem from file.")
                 continue 
             print ("Problem loaded successfully!")
-        else :
-            problem =input_problem ()
 
-        print_problem_summary (problem )
-
-        if choice !=5 :
-            confirm =input ("\nIs this correct? (y/n): ").lower ()
-            if confirm !='y':
-                print ("Please re-enter the problem.")
-                continue 
-        else :
+            print_problem_summary (problem )
             input ("\nPress Enter to solve...")
 
-        if choice ==1 :
-            if any (ct !=1 for ct in problem ['constraint_types']):
-                print ("\n[!] WARNING: Simplex method requires all constraints to be <= type.")
-                print ("Consider using Big M method for >= or = constraints.")
-                proceed =input ("Do you want to continue anyway? (y/n): ").lower ()
-                if proceed !='y':
-                    continue 
-            solve_simplex (problem )
-
-        elif choice ==2 :
-            solve_big_m (problem )
-
-        elif choice in [4 ,5 ]:
             method =detect_method (problem )
             if method =="SIMPLEX":
                 print ("\n"+"*"*80 )
@@ -6589,10 +7755,9 @@ def main ():
                 input ("\nPress Enter to continue...")
                 solve_big_m (problem )
 
-        another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
-        if another !='y':
-            print ("\nThank you for using OR Exam Helper. Good luck!")
-            break 
+            another =input ("\n\nDo you want to solve another problem? (y/n): ").lower ()
+            if another !='y':
+                break 
 
 if __name__ =="__main__":
     main ()
